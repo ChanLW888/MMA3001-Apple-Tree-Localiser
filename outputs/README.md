@@ -18,28 +18,47 @@ Run all scripts from the **project root** using the `src/` path.
 
 ```bash
 python src/apple_predictor.py
+```
 
 Outputs are saved to:
 
+```text
 outputs/apple_detection/
 ├── annotated/
 └── apple_counts.csv
-Apple Segmenter Baseline
+```
+
+### Apple Segmenter Baseline
+
+```bash
 python src/apple_segmenter_v1.py
+```
 
 Outputs are saved to:
 
+```text
 outputs/apple_rfdetr/
 ├── annotated/
 ├── masks/
 └── apple_counts.csv
+```
 
 The segmentation script uses the trained RF-DETR checkpoint:
 
+```text
 outputs/rfdetr_apple_tree/checkpoint_best_total.pth
-Train the Apple Segmenter
+```
+
+### Train the Apple Segmenter
+
+```bash
 python src/apple_segmenter_train.py
+```
 
-Training outputs and checkpoints are saved under outputs/.
+Training outputs and checkpoints are saved under:
 
-Note: Generated outputs, model checkpoints, and other large files are not included in the repository and are ignored by Git.
+```text
+outputs/
+```
+
+> **Note:** Generated outputs, model checkpoints, and other large files are not included in the repository and are ignored by Git.
