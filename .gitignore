@@ -1,3 +1,7 @@
 # Dataset and generated files
-data/
-outputs/
+data/*
+outputs/*
+
+# Keep folder documentation
+!data/README.md
+!outputs/README.md
