@@ -5,3 +5,11 @@ outputs/*
 # Keep folder documentation
 !data/README.md
 !outputs/README.md
+
+
+docs/_build/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+outputs/
