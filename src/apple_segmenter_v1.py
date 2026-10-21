@@ -5,7 +5,7 @@ Default branch source: summer ground-truth (GT) branch masks.
 Optional: externally predicted branch masks placed in PREDICTED_BRANCH_DIR.
 
 Save this script in your project's scripts/ folder, one level below project root.
-Run: python scripts/rfdetr_branch_guided_apples.py
+Run: python src/rfdetr_branch_guided_visual.py
 """
 from pathlib import Path
 import csv
@@ -164,6 +164,24 @@ def filter_instances(detections, image_shape, zone):
     return kept
 
 
+def render_apple_annotations(image_bgr, boxes, centroids, color_bgr):
+    """Draw identical box, centre, index and count styling for either detector.
+
+    All boxes are inclusive (x1, y1, x2, y2); image is OpenCV BGR.
+    """
+    annotated = image_bgr.copy()
+    for index, (box, center) in enumerate(zip(boxes, centroids), start=1):
+        x1, y1, x2, y2 = map(int, box)
+        cx, cy = (int(round(float(v))) for v in center)
+        cv2.rectangle(annotated, (x1, y1), (x2, y2), color_bgr, 2)
+        cv2.circle(annotated, (cx, cy), 3, color_bgr, -1, cv2.LINE_AA)
+        cv2.putText(annotated, str(index), (x1, max(15, y1 - 5)),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, color_bgr, 1, cv2.LINE_AA)
+    cv2.putText(annotated, f'Apples: {len(boxes)}', (10, 25),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.7, color_bgr, 2, cv2.LINE_AA)
+    return annotated
+
+
 def save_outputs(image, image_path, branch, zone, instances):
     out_ann = OUTPUT_DIR / "annotated"
     out_masks = OUTPUT_DIR / "masks"
@@ -175,28 +193,13 @@ def save_outputs(image, image_path, branch, zone, instances):
     if len(instances) > np.iinfo(np.uint16).max:
         raise ValueError("Too many instances for uint16 ID mask")
     id_map = np.zeros((h, w), dtype=np.uint16)
-    annotated = image.copy()  # NO segmentation colour overlay is applied
-    # Preserve entire accepted apple masks (not just their overlap).
+    # Segmentation masks are saved separately; no coloured mask overlay.
     for apple_id, instance in enumerate(instances, start=1):
         id_map[instance["mask"]] = apple_id
 
-    # Keep the original RGB appearance; draw only bounding boxes and centroids.
-    for index, instance in enumerate(instances, start=1):
-        x1, y1, x2, y2 = instance["bbox"]
-        cx, cy = instance["centroid"]
-        cv2.rectangle(annotated, (x1, y1), (x2, y2), (0, 255, 255), 1)
-        cv2.circle(
-            annotated, (int(round(cx)), int(round(cy))),
-            3, (0, 255, 0), -1, cv2.LINE_AA
-        )
-        cv2.putText(annotated, str(index), (x1, max(15, y1 - 4)),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
-
-    cv2.putText(
-        annotated, f"Branch-guided apples: {len(instances)}",
-        (12, 32), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255),
-        2, cv2.LINE_AA
-    )
+    boxes = [instance["bbox"] for instance in instances]
+    centers = [instance["centroid"] for instance in instances]
+    annotated = render_apple_annotations(image, boxes, centers, (255, 255, 0))
 
     stem = image_path.stem
     paths = (
@@ -226,7 +229,7 @@ def main():
         raise ImportError("Install the rfdetr package in your Conda environment") from exc
 
     print(f"RUNNING SCRIPT: {Path(__file__).resolve()}")
-    print(f"ANNOTATION MODE: BOUNDING BOXES + GREEN CENTROIDS ONLY (NO OVERLAY)")
+    print(f"ANNOTATION MODE: CYAN BOXES + CYAN CENTROIDS (NO OVERLAY)")
     print(f"OUTPUT DIRECTORY: {OUTPUT_DIR}")
     model = RFDETRSegMedium(pretrain_weights=str(RFDETR_CHECKPOINT))
     images = sorted(RGB_DIR.glob("*.png"))

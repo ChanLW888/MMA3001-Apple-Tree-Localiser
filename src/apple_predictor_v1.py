@@ -21,7 +21,7 @@ RGB_DIR = DATASET / SEASON / 'RGB'
 DEPTH_DIR = DATASET / SEASON / 'D'
 GT_DIR = DATASET / SEASON / 'GT'
 OUTPUT_ROOT = PROJECT_ROOT / 'outputs' / 'apple_detection'
-ANNOTATED_DIR = OUTPUT_ROOT / 'annotated'
+ANNOTATED_DIR = OUTPUT_ROOT  # Save all annotated images in one flat folder
 COUNTS_CSV = OUTPUT_ROOT / 'apple_counts.csv'
 INSTANCES_CSV = OUTPUT_ROOT / 'apple_instances.csv'
 TIMINGS_CSV = OUTPUT_ROOT / 'image_timings.csv'
@@ -147,19 +147,35 @@ def find_apple_candidates(rgb, depth, gt):
     return candidates
 
 
-def draw_annotations(rgb, candidates):
-    """Preserve original output style; RGB array passed to PIL on save."""
-    annotated = rgb.copy()
-    for i, apple in enumerate(candidates, 1):
-        x, y, w, h = apple['bbox']
-        cx, cy = apple['centroid']
-        cv2.rectangle(annotated, (x, y), (x + w, y + h), (0, 0, 255), 2)
-        cv2.circle(annotated, (int(cx), int(cy)), 3, (0, 0, 255), -1)
-        cv2.putText(annotated, str(i), (x, max(y - 5, 15)),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
-    cv2.putText(annotated, f'Apples: {len(candidates)}', (10, 25),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2, cv2.LINE_AA)
+def render_apple_annotations(image_bgr, boxes, centroids, color_bgr):
+    """Draw identical box, centre, index and count styling for either detector.
+
+    All boxes are inclusive (x1, y1, x2, y2); image is OpenCV BGR.
+    """
+    annotated = image_bgr.copy()
+    for index, (box, center) in enumerate(zip(boxes, centroids), start=1):
+        x1, y1, x2, y2 = map(int, box)
+        cx, cy = (int(round(float(v))) for v in center)
+        cv2.rectangle(annotated, (x1, y1), (x2, y2), color_bgr, 2)
+        cv2.circle(annotated, (cx, cy), 3, color_bgr, -1, cv2.LINE_AA)
+        cv2.putText(annotated, str(index), (x1, max(15, y1 - 5)),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, color_bgr, 1, cv2.LINE_AA)
+    cv2.putText(annotated, f'Apples: {len(boxes)}', (10, 25),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.7, color_bgr, 2, cv2.LINE_AA)
     return annotated
+
+
+def draw_annotations(rgb, candidates):
+    """Draw orange annotations and return an RGB image for PIL saving."""
+    boxes = []
+    centers = []
+    for apple in candidates:
+        x, y, w, h = apple['bbox']
+        boxes.append((x, y, x + w - 1, y + h - 1))
+        centers.append(apple['centroid'])
+    bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+    rendered = render_apple_annotations(bgr, boxes, centers, (0, 165, 255))
+    return cv2.cvtColor(rendered, cv2.COLOR_BGR2RGB)
 
 
 def get_matching_files(rgb_path, info):
@@ -184,7 +200,7 @@ def process_frame(rgb_path, info):
     detection_ms = (time.perf_counter() - detect_start) * 1000
     save_start = time.perf_counter()
     annotated = draw_annotations(rgb, candidates)
-    output_dir = ANNOTATED_DIR / info['tree']
+    output_dir = ANNOTATED_DIR
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / rgb_path.name
     Image.fromarray(annotated).save(output_path)
@@ -262,6 +278,7 @@ def save_csv(results):
 
     metadata = {
         'algorithm': 'apple_detector_v1', 'branch_source': 'gt',
+        'annotation_color': 'orange',
         'branch_alignment': 'full_resize',
         'bbox_convention': 'inclusive xyxy',
         'centroid': 'connected component pixel mean in original RGB coordinates',
