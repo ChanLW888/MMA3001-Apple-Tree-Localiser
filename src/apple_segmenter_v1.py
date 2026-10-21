@@ -10,6 +10,9 @@ Run: python scripts/rfdetr_branch_guided_apples.py
 from pathlib import Path
 import csv
 import re
+import time
+
+import torch
 
 import cv2
 import numpy as np
@@ -25,7 +28,7 @@ PREDICTED_BRANCH_DIR = ROOT / "outputs" / "branch_predictions"
 RFDETR_CHECKPOINT = (
     ROOT / "outputs" / "rfdetr_apple_tree" / "checkpoint_best_total.pth"
 )
-OUTPUT_DIR = ROOT / "outputs" / "apple_rfdetr_boxes_only"
+OUTPUT_DIR = ROOT / "outputs" / "apple_rfdetr_instances"
 
 # "gt" uses the original branch GT masks, like your traditional detector.
 # "predicted" loads already-exported branch masks from PREDICTED_BRANCH_DIR.
@@ -240,11 +243,24 @@ def main():
     counts_path = OUTPUT_DIR / "apple_counts.csv"
     details_path = OUTPUT_DIR / "apple_instances.csv"
     processed = skipped = 0
+    measured_inference_ms = []
+    measured_total_ms = []
+    timing_path = OUTPUT_DIR / "image_timings.csv"
+
+    def sync_cuda():
+        # CUDA kernels execute asynchronously; sync for accurate GPU inference timing.
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
 
     with counts_path.open("w", newline="", encoding="utf-8") as cf, \
-         details_path.open("w", newline="", encoding="utf-8") as df:
+         details_path.open("w", newline="", encoding="utf-8") as df, \
+         timing_path.open("w", newline="", encoding="utf-8") as tf:
         counts = csv.writer(cf)
         details = csv.writer(df)
+        timing = csv.writer(tf)
+        timing.writerow(["image", "rf_detr_detections", "kept_apple_count",
+                         "read_ms", "inference_ms", "filter_ms",
+                         "save_ms", "total_ms"])
         counts.writerow([
             "image", "tree", "season", "time",
             "branch_source", "rf_detr_detections", "kept_apple_count"
@@ -267,6 +283,7 @@ def main():
                 print(f"[{i}] Skipped missing branch mask: {branch_path.name}")
                 skipped += 1
                 continue
+            frame_start = time.perf_counter()
             image = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
             raw_branch = cv2.imread(str(branch_path), cv2.IMREAD_UNCHANGED)
             if image is None or raw_branch is None:
@@ -278,12 +295,19 @@ def main():
                 raw_branch, image.shape, BRANCH_MASK_ALIGNMENT
             )
             zone = make_branch_zone(branch)
+            read_ms = (time.perf_counter() - frame_start) * 1000
+            sync_cuda()
+            infer_start = time.perf_counter()
             predictions = model.predict(
                 str(image_path), threshold=CONFIDENCE_THRESHOLD
             )
+            sync_cuda()
+            inference_ms = (time.perf_counter() - infer_start) * 1000
+            filter_start = time.perf_counter()
             kept = filter_instances(predictions, image.shape, zone)
             raw_count = len(predictions) if predictions is not None else 0
-
+            filter_ms = (time.perf_counter() - filter_start) * 1000
+            save_start = time.perf_counter()
             save_outputs(image, image_path, branch, zone, kept)
             counts.writerow([
                 image_path.name, info["tree"], info["season"], info["time"],
@@ -296,12 +320,24 @@ def main():
                     f'{apple["centroid"][0]:.2f}',
                     f'{apple["centroid"][1]:.2f}', *apple["bbox"]
                 ])
+            save_ms = (time.perf_counter() - save_start) * 1000
+            total_ms = (time.perf_counter() - frame_start) * 1000
+            timing.writerow([image_path.name, raw_count, len(kept),
+                            f"{read_ms:.4f}", f"{inference_ms:.4f}",
+                            f"{filter_ms:.4f}", f"{save_ms:.4f}", f"{total_ms:.4f}"])
+            measured_inference_ms.append(inference_ms)
+            measured_total_ms.append(total_ms)
             processed += 1
             print(f"[{i}/{len(images)}] {image_path.name}: "
-                  f"RF-DETR={raw_count}, along branch={len(kept)}")
+                  f"RF-DETR={raw_count}, along branch={len(kept)} | "
+                  f"inference={inference_ms:.2f} ms | total={total_ms:.2f} ms")
 
     print(f"\nDone: processed={processed}, skipped={skipped}")
     print(f"Outputs: {OUTPUT_DIR}")
+    print(f"Timings: {timing_path}")
+    if measured_inference_ms:
+        print(f"Mean RF-DETR inference: {np.mean(measured_inference_ms):.2f} ms/image")
+        print(f"Mean full-frame runtime: {np.mean(measured_total_ms):.2f} ms/image")
 
 
 if __name__ == "__main__":
