@@ -1,521 +1,308 @@
+"""
+RF-DETR apple instance segmentation constrained to Y-shaped scaffold branches.
+
+Default branch source: summer ground-truth (GT) branch masks.
+Optional: externally predicted branch masks placed in PREDICTED_BRANCH_DIR.
+
+Save this script in your project's scripts/ folder, one level below project root.
+Run: python scripts/rfdetr_branch_guided_apples.py
+"""
 from pathlib import Path
 import csv
+import re
 
 import cv2
 import numpy as np
-import torch
 
-from rfdetr import RFDETRSegMedium
-
-
-# ============================================================
-# CONFIG
-# ============================================================
-
+# ------------------------- CONFIGURATION -------------------------
 ROOT = Path(__file__).resolve().parents[1]
+SEASON = "Summer"
+DATA_DIR = ROOT / "data" / "Organised" / SEASON
+RGB_DIR = DATA_DIR / "RGB"
+GT_DIR = DATA_DIR / "GT"
+PREDICTED_BRANCH_DIR = ROOT / "outputs" / "branch_predictions"
 
-
-# ------------------------------------------------------------
-# TreeID RGB images
-# ------------------------------------------------------------
-
-RGB_DIR = (
-    ROOT
-    / "data"
-    / "Organised"
-    / "Summer"
-    / "RGB"
+RFDETR_CHECKPOINT = (
+    ROOT / "outputs" / "rfdetr_apple_tree" / "checkpoint_best_total.pth"
 )
+OUTPUT_DIR = ROOT / "outputs" / "apple_rfdetr_boxes_only"
 
-
-# ------------------------------------------------------------
-# TRAINED RF-DETR MODEL
-# ------------------------------------------------------------
-
-MODEL_PATH = (
-    ROOT
-    / "outputs"
-    / "rfdetr_apple_tree"
-    / "checkpoint_best_total.pth"
-)
-
-
-# ------------------------------------------------------------
-# OUTPUTS
-# ------------------------------------------------------------
-
-OUTPUT_DIR = (
-    ROOT
-    / "outputs"
-    / "apple_rfdetr"
-)
-
-ANNOTATED_DIR = OUTPUT_DIR / "annotated"
-MASK_DIR = OUTPUT_DIR / "masks"
-
-
-# ============================================================
-# INFERENCE SETTINGS
-# ============================================================
-
+# "gt" uses the original branch GT masks, like your traditional detector.
+# "predicted" loads already-exported branch masks from PREDICTED_BRANCH_DIR.
+BRANCH_SOURCE = "gt"
 CONFIDENCE_THRESHOLD = 0.20
-
-
-# ============================================================
-# PROCESSING
-# ============================================================
-
-# False = process the entire dataset
+INSTANCE_MASK_THRESHOLD = 0.50
+BRANCH_DILATION = 100  # ellipse kernel DIAMETER in source-image pixels
+MIN_BRANCH_OVERLAP = 0.05
+KEEP_LARGEST_BRANCH_COMPONENT = False
+MIN_APPLE_AREA = 1
 TEST_ONLY = False
-
-# Only used when TEST_ONLY = True
 TEST_FRAMES = 5
+# Set START_FRAME = 84 to continue from frame 84 after a previous crash.
+# Set it back to 1 for a complete fresh run. CSVs are recreated on each run.
+START_FRAME = 1
+
+# IMPORTANT: GT masks at 256x256 represent the central 480x480 crop
+# of each original 640x480 RGB image, according to the model preprocessing.
+# Use "center_crop" for that geometry. "full_resize" instead stretches GT
+# over the full RGB image, like the original traditional CV script.
+BRANCH_MASK_ALIGNMENT = "center_crop"
+# -----------------------------------------------------------------
 
 
-# ============================================================
-# SETUP
-# ============================================================
-
-ANNOTATED_DIR.mkdir(
-    parents=True,
-    exist_ok=True
-)
-
-MASK_DIR.mkdir(
-    parents=True,
-    exist_ok=True
-)
-
-
-# ============================================================
-# DEVICE
-# ============================================================
-
-device = "cuda" if torch.cuda.is_available() else "cpu"
-
-
-print("=" * 60)
-print("RF-DETR Apple Instance Segmentation")
-print("=" * 60)
-
-print(f"RGB directory : {RGB_DIR}")
-print(f"Model         : {MODEL_PATH}")
-print(f"Output        : {OUTPUT_DIR}")
-print(f"Confidence    : {CONFIDENCE_THRESHOLD}")
-print(f"Device        : {device}")
-
-if torch.cuda.is_available():
-
-    print(
-        f"GPU           : "
-        f"{torch.cuda.get_device_name(0)}"
+def parse_rgb_filename(path: Path):
+    match = re.fullmatch(
+        r"(?P<tree>R\d+N\d+)_(?P<season>Summer|Winter)_RGB-"
+        r"(?P<time>.+)\.png",
+        path.name,
+        flags=re.IGNORECASE,
     )
-
-else:
-
-    print(
-        "WARNING: CUDA not available. "
-        "Running on CPU."
-    )
-
-print("=" * 60)
+    return match.groupdict() if match else None
 
 
-# ============================================================
-# CHECK PATHS
-# ============================================================
-
-if not RGB_DIR.exists():
-
-    raise FileNotFoundError(
-        f"RGB directory not found:\n{RGB_DIR}"
-    )
-
-
-if not MODEL_PATH.exists():
-
-    raise FileNotFoundError(
-        f"RF-DETR checkpoint not found:\n{MODEL_PATH}"
-    )
-
-
-# ============================================================
-# LOAD MODEL
-# ============================================================
-
-print("\nLoading trained RF-DETR model...")
-
-model = RFDETRSegMedium(
-    pretrain_weights=str(MODEL_PATH)
-)
-
-print("RF-DETR model loaded.")
-
-
-# ============================================================
-# GET IMAGES
-# ============================================================
-
-image_paths = sorted(
-    RGB_DIR.glob("*.png")
-)
-
-if len(image_paths) == 0:
-
-    raise RuntimeError(
-        f"No PNG images found in:\n{RGB_DIR}"
-    )
-
-
-if TEST_ONLY:
-
-    image_paths = image_paths[:TEST_FRAMES]
-
-
-print(
-    f"\nProcessing "
-    f"{len(image_paths)} image(s)...\n"
-)
-
-
-# ============================================================
-# CSV
-# ============================================================
-
-csv_path = (
-    OUTPUT_DIR
-    / "apple_counts.csv"
-)
-
-
-csv_file = open(
-    csv_path,
-    "w",
-    newline="",
-    encoding="utf-8"
-)
-
-
-csv_writer = csv.writer(csv_file)
-
-
-csv_writer.writerow([
-    "image",
-    "apple_count"
-])
-
-
-# ============================================================
-# PROCESS IMAGES
-# ============================================================
-
-total_apples = 0
-
-
-for image_index, image_path in enumerate(
-    image_paths,
-    start=1
-):
-
-    print(
-        f"[{image_index}/{len(image_paths)}] "
-        f"{image_path.name}"
-    )
-
-
-    # --------------------------------------------------------
-    # Read image
-    # --------------------------------------------------------
-
-    image = cv2.imread(
-        str(image_path)
-    )
-
-
-    if image is None:
-
-        print(
-            "  WARNING: Could not read image."
+def corresponding_branch_path(image_path: Path, info: dict) -> Path:
+    if BRANCH_SOURCE == "gt":
+        return GT_DIR / (
+            f'{info["tree"]}_{info["season"]}_GT-{info["time"]}.png'
         )
+    if BRANCH_SOURCE == "predicted":
+        # Adjust this naming convention if your exported U-Net masks differ.
+        return PREDICTED_BRANCH_DIR / (image_path.stem + "_branch.png")
+    raise ValueError("BRANCH_SOURCE must be 'gt' or 'predicted'")
 
-        continue
 
+def align_branch_mask(mask: np.ndarray, image_shape, alignment: str):
+    """Map a branch mask to original RGB dimensions without corrupting labels."""
+    height, width = image_shape[:2]
+    if mask.ndim == 3:
+        mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
+    mask = (mask > 127).astype(np.uint8)  # binary 0/1
 
-    height, width = image.shape[:2]
+    if mask.shape == (height, width):
+        return mask
 
+    if alignment == "full_resize":
+        return cv2.resize(mask, (width, height), interpolation=cv2.INTER_NEAREST)
 
-    # --------------------------------------------------------
-    # RF-DETR inference
-    # --------------------------------------------------------
+    if alignment != "center_crop":
+        raise ValueError("Unknown BRANCH_MASK_ALIGNMENT value")
 
-    detections = model.predict(
-        str(image_path),
-        threshold=CONFIDENCE_THRESHOLD
+    crop_size = min(height, width)
+    # Match the branch network's square, centre-cropped RGB input.
+    square = cv2.resize(
+        mask, (crop_size, crop_size), interpolation=cv2.INTER_NEAREST
     )
+    canvas = np.zeros((height, width), dtype=np.uint8)
+    y0 = (height - crop_size) // 2
+    x0 = (width - crop_size) // 2
+    canvas[y0:y0 + crop_size, x0:x0 + crop_size] = square
+    return canvas
 
 
-    # --------------------------------------------------------
-    # Prepare outputs
-    # --------------------------------------------------------
+def make_branch_zone(branch_mask: np.ndarray):
+    """Optionally keep largest branch component, then dilate its mask."""
+    binary = (branch_mask > 0).astype(np.uint8)
+    if KEEP_LARGEST_BRANCH_COMPONENT and np.any(binary):
+        n, labels, stats, _ = cv2.connectedComponentsWithStats(binary, 8)
+        if n > 1:
+            component = 1 + int(np.argmax(stats[1:, cv2.CC_STAT_AREA]))
+            binary = (labels == component).astype(np.uint8)
 
-    annotated = image.copy()
-
-    instance_mask = np.zeros(
-        (height, width),
-        dtype=np.uint16
+    if BRANCH_DILATION < 1:
+        raise ValueError("BRANCH_DILATION must be >= 1")
+    kernel = cv2.getStructuringElement(
+        cv2.MORPH_ELLIPSE, (BRANCH_DILATION, BRANCH_DILATION)
     )
-
-    apple_count = 0
-
-
-    # ========================================================
-    # PROCESS DETECTIONS
-    # ========================================================
-
-    if detections is not None:
-
-        if (
-            detections.mask is not None
-            and len(detections) > 0
-        ):
-
-            masks = detections.mask
-
-            confidences = detections.confidence
+    return cv2.dilate(binary, kernel)
 
 
-            # ------------------------------------------------
-            # Process each detected apple
-            # ------------------------------------------------
+def filter_instances(detections, image_shape, zone):
+    """Keep whole RF-DETR instances overlapping the branch region."""
+    height, width = image_shape[:2]
+    kept = []
+    if detections is None or len(detections) == 0:
+        return kept
+    masks = detections.mask
+    confidences = detections.confidence
+    if masks is None or confidences is None:
+        return kept
 
-            for detection_index in range(
-                len(detections)
-            ):
+    for idx in range(len(detections)):
+        confidence = float(confidences[idx])
+        if confidence < CONFIDENCE_THRESHOLD:
+            continue
+        raw_mask = np.asarray(masks[idx])
+        if raw_mask.ndim != 2:
+            raise ValueError(f"RF-DETR mask {idx} has shape {raw_mask.shape}")
+        binary = (raw_mask > INSTANCE_MASK_THRESHOLD).astype(np.uint8)
+        if binary.shape != (height, width):
+            binary = cv2.resize(
+                binary, (width, height), interpolation=cv2.INTER_NEAREST
+            )
+        apple_area = int(np.count_nonzero(binary))
+        if apple_area < MIN_APPLE_AREA:
+            continue
 
-                confidence = float(
-                    confidences[detection_index]
-                )
+        intersection = int(np.count_nonzero((binary > 0) & (zone > 0)))
+        overlap = intersection / apple_area
+        if overlap < MIN_BRANCH_OVERLAP:
+            continue
 
-
-                if confidence < CONFIDENCE_THRESHOLD:
-
-                    continue
-
-
-                # ------------------------------------------------
-                # Get segmentation mask
-                # ------------------------------------------------
-
-                binary_mask = (
-                    masks[detection_index] > 0.5
-                )
-
-
-                # ------------------------------------------------
-                # Resize mask if necessary
-                # ------------------------------------------------
-
-                if binary_mask.shape != (
-                    height,
-                    width
-                ):
-
-                    binary_mask = cv2.resize(
-                        binary_mask.astype(
-                            np.uint8
-                        ),
-                        (
-                            width,
-                            height
-                        ),
-                        interpolation=cv2.INTER_NEAREST
-                    ).astype(bool)
+        ys, xs = np.nonzero(binary)
+        kept.append({
+            "mask": binary.astype(bool),
+            "confidence": confidence,
+            "area": apple_area,
+            "overlap": overlap,
+            "bbox": (int(xs.min()), int(ys.min()), int(xs.max()),
+                     int(ys.max())),
+            "centroid": (float(xs.mean()), float(ys.mean())),
+        })
+    return kept
 
 
-                # ------------------------------------------------
-                # Check mask area
-                # ------------------------------------------------
+def save_outputs(image, image_path, branch, zone, instances):
+    out_ann = OUTPUT_DIR / "annotated"
+    out_masks = OUTPUT_DIR / "masks"
+    out_zones = OUTPUT_DIR / "branch_zones"
+    for folder in (out_ann, out_masks, out_zones):
+        folder.mkdir(parents=True, exist_ok=True)
 
-                area = int(
-                    binary_mask.sum()
-                )
+    h, w = image.shape[:2]
+    if len(instances) > np.iinfo(np.uint16).max:
+        raise ValueError("Too many instances for uint16 ID mask")
+    id_map = np.zeros((h, w), dtype=np.uint16)
+    annotated = image.copy()  # NO segmentation colour overlay is applied
+    # Preserve entire accepted apple masks (not just their overlap).
+    for apple_id, instance in enumerate(instances, start=1):
+        id_map[instance["mask"]] = apple_id
 
-
-                if area == 0:
-
-                    continue
-
-
-                # ------------------------------------------------
-                # Count apple
-                # ------------------------------------------------
-
-                apple_count += 1
-
-                apple_id = apple_count
-
-
-                # ------------------------------------------------
-                # Store instance ID
-                #
-                # 0 = background
-                # 1 = apple 1
-                # 2 = apple 2
-                # etc.
-                # ------------------------------------------------
-
-                instance_mask[
-                    binary_mask
-                ] = apple_id
-
-
-    # ========================================================
-    # CREATE RED MASK OVERLAY
-    # ========================================================
-
-    if apple_count > 0:
-
-        # Create red image
-        red_overlay = np.zeros_like(
-            annotated
+    # Keep the original RGB appearance; draw only bounding boxes and centroids.
+    for index, instance in enumerate(instances, start=1):
+        x1, y1, x2, y2 = instance["bbox"]
+        cx, cy = instance["centroid"]
+        cv2.rectangle(annotated, (x1, y1), (x2, y2), (0, 255, 255), 1)
+        cv2.circle(
+            annotated, (int(round(cx)), int(round(cy))),
+            3, (0, 255, 0), -1, cv2.LINE_AA
         )
-
-        red_overlay[:, :] = (
-            0,
-            0,
-            255
-        )
-
-
-        # Combined mask containing all apples
-        combined_mask = (
-            instance_mask > 0
-        )
-
-
-        # Apply red overlay only where apples are detected
-        annotated[combined_mask] = cv2.addWeighted(
-            annotated[combined_mask],
-            0.65,
-            red_overlay[combined_mask],
-            0.35,
-            0
-        )
-
-
-    # ========================================================
-    # DRAW TOTAL COUNT
-    # ========================================================
-
-    count_text = (
-        f"Apples: {apple_count}"
-    )
-
+        cv2.putText(annotated, str(index), (x1, max(15, y1 - 4)),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
 
     cv2.putText(
-        annotated,
-        count_text,
-        (20, 45),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        1.2,
-        (0, 255, 255),
-        3,
-        cv2.LINE_AA
+        annotated, f"Branch-guided apples: {len(instances)}",
+        (12, 32), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255),
+        2, cv2.LINE_AA
     )
 
-
-    # ========================================================
-    # SAVE ANNOTATED IMAGE
-    # ========================================================
-
-    output_name = image_path.stem
-
-
-    annotated_path = (
-        ANNOTATED_DIR
-        / f"{output_name}_annotated.png"
+    stem = image_path.stem
+    paths = (
+        out_ann / f"{stem}_annotated.png",
+        out_masks / f"{stem}_instances.png",
+        out_zones / f"{stem}_zone.png",
     )
+    for path, array in zip(paths, (
+        annotated, id_map, (zone * 255).astype(np.uint8)
+    )):
+        if not cv2.imwrite(str(path), array):
+            raise IOError(f"Could not write {path}")
+    return paths
 
 
-    cv2.imwrite(
-        str(annotated_path),
-        annotated
-    )
+def main():
+    if not RGB_DIR.is_dir():
+        raise FileNotFoundError(f"Missing RGB directory: {RGB_DIR}")
+    if not RFDETR_CHECKPOINT.is_file():
+        raise FileNotFoundError(f"Missing RF-DETR checkpoint: {RFDETR_CHECKPOINT}")
+    if not 0 <= MIN_BRANCH_OVERLAP <= 1:
+        raise ValueError("MIN_BRANCH_OVERLAP must be between 0 and 1")
+
+    try:
+        from rfdetr import RFDETRSegMedium
+    except ImportError as exc:
+        raise ImportError("Install the rfdetr package in your Conda environment") from exc
+
+    print(f"RUNNING SCRIPT: {Path(__file__).resolve()}")
+    print(f"ANNOTATION MODE: BOUNDING BOXES + GREEN CENTROIDS ONLY (NO OVERLAY)")
+    print(f"OUTPUT DIRECTORY: {OUTPUT_DIR}")
+    model = RFDETRSegMedium(pretrain_weights=str(RFDETR_CHECKPOINT))
+    images = sorted(RGB_DIR.glob("*.png"))
+    if TEST_ONLY:
+        images = images[:TEST_FRAMES]
+    if START_FRAME < 1:
+        raise ValueError("START_FRAME must be >= 1")
+    if START_FRAME > 1:
+        images = images[START_FRAME - 1:]
+    if not images:
+        raise RuntimeError(f"No PNG images in {RGB_DIR}")
+
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    counts_path = OUTPUT_DIR / "apple_counts.csv"
+    details_path = OUTPUT_DIR / "apple_instances.csv"
+    processed = skipped = 0
+
+    with counts_path.open("w", newline="", encoding="utf-8") as cf, \
+         details_path.open("w", newline="", encoding="utf-8") as df:
+        counts = csv.writer(cf)
+        details = csv.writer(df)
+        counts.writerow([
+            "image", "tree", "season", "time",
+            "branch_source", "rf_detr_detections", "kept_apple_count"
+        ])
+        details.writerow([
+            "image", "apple_id", "confidence", "area_px",
+            "branch_overlap", "cx_px", "cy_px",
+            "x1", "y1", "x2", "y2"
+        ])
+
+        for i, image_path in enumerate(images, 1):
+            info = parse_rgb_filename(image_path)
+            if info is None:
+                print(f"[{i}] Skipped unexpected filename: {image_path.name}")
+                skipped += 1
+                continue
+
+            branch_path = corresponding_branch_path(image_path, info)
+            if not branch_path.is_file():
+                print(f"[{i}] Skipped missing branch mask: {branch_path.name}")
+                skipped += 1
+                continue
+            image = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
+            raw_branch = cv2.imread(str(branch_path), cv2.IMREAD_UNCHANGED)
+            if image is None or raw_branch is None:
+                print(f"[{i}] Skipped unreadable image/mask: {image_path.name}")
+                skipped += 1
+                continue
+
+            branch = align_branch_mask(
+                raw_branch, image.shape, BRANCH_MASK_ALIGNMENT
+            )
+            zone = make_branch_zone(branch)
+            predictions = model.predict(
+                str(image_path), threshold=CONFIDENCE_THRESHOLD
+            )
+            kept = filter_instances(predictions, image.shape, zone)
+            raw_count = len(predictions) if predictions is not None else 0
+
+            save_outputs(image, image_path, branch, zone, kept)
+            counts.writerow([
+                image_path.name, info["tree"], info["season"], info["time"],
+                BRANCH_SOURCE, raw_count, len(kept)
+            ])
+            for j, apple in enumerate(kept, 1):
+                details.writerow([
+                    image_path.name, j, f'{apple["confidence"]:.5f}',
+                    apple["area"], f'{apple["overlap"]:.5f}',
+                    f'{apple["centroid"][0]:.2f}',
+                    f'{apple["centroid"][1]:.2f}', *apple["bbox"]
+                ])
+            processed += 1
+            print(f"[{i}/{len(images)}] {image_path.name}: "
+                  f"RF-DETR={raw_count}, along branch={len(kept)}")
+
+    print(f"\nDone: processed={processed}, skipped={skipped}")
+    print(f"Outputs: {OUTPUT_DIR}")
 
 
-    # ========================================================
-    # SAVE INSTANCE MASK
-    # ========================================================
-
-    mask_path = (
-        MASK_DIR
-        / f"{output_name}_instances.png"
-    )
-
-
-    cv2.imwrite(
-        str(mask_path),
-        instance_mask
-    )
-
-
-    # ========================================================
-    # SAVE COUNT TO CSV
-    # ========================================================
-
-    csv_writer.writerow([
-        image_path.name,
-        apple_count
-    ])
-
-
-    # ========================================================
-    # TOTAL
-    # ========================================================
-
-    total_apples += apple_count
-
-
-    print(
-        f"  Apples detected: "
-        f"{apple_count}"
-    )
-
-
-# ============================================================
-# FINISH
-# ============================================================
-
-csv_file.close()
-
-
-print("\n" + "=" * 60)
-print("DONE")
-print("=" * 60)
-
-print(
-    f"Images processed : "
-    f"{len(image_paths)}"
-)
-
-print(
-    f"Total detections : "
-    f"{total_apples}"
-)
-
-print(
-    f"CSV              : "
-    f"{csv_path}"
-)
-
-print(
-    f"Annotated images : "
-    f"{ANNOTATED_DIR}"
-)
-
-print(
-    f"Instance masks   : "
-    f"{MASK_DIR}"
-)
-
-print("=" * 60)
+if __name__ == "__main__":
+    main()
