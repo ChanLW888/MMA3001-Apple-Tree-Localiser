@@ -1,33 +1,14 @@
 #!/usr/bin/env python3
-"""Train and evaluate a pixel-wise MLP for RGB-D branch segmentation.
+"""Train a pixel-wise RGB-D MLP for binary branch segmentation.
 
-This script trains a fully connected multilayer perceptron (MLP) to classify
-individual pixels as branch or background using RGB and grayscale-depth input.
-Unlike a convolutional model, the MLP processes each pixel independently and
-does not explicitly learn spatial relationships between neighbouring pixels.
-
-The script pairs summer RGB, depth, and ground-truth (GT) PNG files by their
-shared timestamp identifier, creates a reproducible train/validation split,
-trains the model with weighted binary cross-entropy, and saves the best
-checkpoint, validation metrics, training history, and qualitative comparisons.
-
-Expected input:
-    - RGB image: three colour channels.
-    - Depth image: one grayscale channel.
-    - GT mask: one grayscale channel, where values above ``mask_threshold``
-      represent branch pixels.
+Float32 input [B, 4, S, S] is ImageNet-standardised RGB plus grayscale depth/255. GT [B,
+1, S, S] uses intensity >127 as branch by default and must already match the centred
+field of view. The MLP has no spatial context. Uses positive-weight-12 BCE, Adam, seeded
+sample splitting and best-validation-Dice selection. Validation is not independent
+testing.
 
 Example:
-    python train_pixel_mlp.py \\
-        --data-root /path/to/data/Organised \\
-        --output-dir outputs/pixel_mlp \\
-        --epochs 60 --batch-size 8
-
-Notes:
-    RGB images are centre-cropped to a square, resized with bilinear
-    interpolation, and normalised using ImageNet RGB statistics. Depth images
-    are centre-cropped, resized with nearest-neighbour interpolation, and
-    scaled to [0, 1]. GT masks are expected to already match ``input_size``.
+    python src/train_baseline.py --data-root data/Organised
 """
 
 from __future__ import annotations
@@ -65,13 +46,19 @@ POSITIVE_CLASS_WEIGHT = 12.0
 
 
 def seed_everything(seed: int) -> None:
-    """Seed random number generators for more reproducible experiments.
+    """Seed Python, NumPy and PyTorch generators.
+
+    CUDA generators are seeded when available. Seeding does not guarantee deterministic
+    GPU kernels.
 
     Args:
-        seed: Seed applied to Python, NumPy, and PyTorch random generators.
+        seed: int; nonnegative NumPy-compatible random seed.
 
     Returns:
         None.
+
+    Raises:
+        ValueError: If NumPy rejects the seed.
     """
     random.seed(seed)
     np.random.seed(seed)
@@ -81,33 +68,33 @@ def seed_everything(seed: int) -> None:
 
 
 def get_sample_key(path: Path, modality: str) -> str:
-    """Return a modality-independent identifier for an image filename.
+    """Build a modality-independent filename identifier.
 
     Args:
-        path: Path to an RGB, depth, or GT image.
-        modality: One of ``"rgb"``, ``"depth"``, or ``"gt"``.
+        path: pathlib.Path to an image; stem retains tree, season and time.
+        modality: str; one of "rgb", "depth", or "gt".
 
     Returns:
-        The filename stem with its modality token replaced by ``_TIME-``.
+        str: Stem with the first modality token replaced by "_TIME-".
 
     Raises:
-        KeyError: If ``modality`` is not a supported modality.
+        KeyError: If modality is unsupported.
     """
     return MODALITY_PATTERNS[modality].sub("_TIME-", path.stem, count=1)
 
 
 def list_modality(root: Path, modality: str) -> list[Path]:
-    """Find summer PNG files belonging to a specified image modality.
+    """Find summer PNGs for one modality recursively.
 
     Args:
-        root: Directory recursively searched for PNG files.
-        modality: One of ``"rgb"``, ``"depth"``, or ``"gt"``.
+        root: pathlib.Path to the dataset directory.
+        modality: str; "rgb", "depth", or "gt".
 
     Returns:
-        Matching file paths in sorted order.
+        list[pathlib.Path]: Sorted matching paths with summer in the stem.
 
     Raises:
-        KeyError: If ``modality`` is not a supported modality.
+        KeyError: If modality is unsupported.
     """
     pattern = MODALITY_PATTERNS[modality]
     return sorted(
@@ -118,18 +105,18 @@ def list_modality(root: Path, modality: str) -> list[Path]:
 
 
 def map_unique(paths: list[Path], modality: str) -> dict[str, Path]:
-    """Map sample identifiers to paths and reject duplicate identifiers.
+    """Index paths while rejecting ambiguous sample identifiers.
 
     Args:
-        paths: Image paths for a single modality.
-        modality: Modality name used in error messages and key generation.
+        paths: list[pathlib.Path] for one modality.
+        modality: str; "rgb", "depth", or "gt".
 
     Returns:
-        Dictionary mapping each sample identifier to its image path.
+        dict[str, pathlib.Path]: Identifiers mapped to unique files.
 
     Raises:
-        RuntimeError: If two files in the modality map to the same identifier.
-        KeyError: If ``modality`` is not a supported modality.
+        RuntimeError: If paths produce duplicate identifiers.
+        KeyError: If modality is unsupported.
     """
     result: dict[str, Path] = {}
     for path in paths:
@@ -143,19 +130,21 @@ def map_unique(paths: list[Path], modality: str) -> dict[str, Path]:
 
 
 def build_samples(root: Path) -> list[dict[str, Any]]:
-    """Pair summer RGB, depth, and GT images using their shared identifiers.
+    """Pair complete summer RGB, depth and branch-GT triplets.
+
+    Incomplete triplets are omitted. Filename agreement does not verify spatial
+    alignment.
 
     Args:
-        root: Root directory containing the organised dataset.
+        root: pathlib.Path; existing organised dataset root.
 
     Returns:
-        Sorted sample dictionaries containing ``key``, ``rgb``, ``depth``,
-        and ``gt`` entries.
+        list[dict]: Sorted records with key, rgb, depth and gt entries; paths are
+            pathlib.Path objects.
 
     Raises:
-        FileNotFoundError: If the dataset root does not exist.
-        RuntimeError: If no complete RGB/depth/GT triplets are found, or if
-            duplicate identifiers occur within a modality.
+        FileNotFoundError: If root does not exist.
+        RuntimeError: If identifiers repeat or no complete triplets exist.
     """
     if not root.exists():
         raise FileNotFoundError(f"Dataset root does not exist: {root}")
@@ -186,13 +175,13 @@ def build_samples(root: Path) -> list[dict[str, Any]]:
 
 
 def centre_crop_square(image: Image.Image) -> Image.Image:
-    """Centre-crop a PIL image to its largest square region.
+    """Crop to the largest centred square without resampling.
 
     Args:
-        image: Input PIL image.
+        image: PIL.Image.Image in any mode.
 
     Returns:
-        A square crop centred within the original image.
+        PIL.Image.Image: Square crop of side min(width, height).
     """
     width, height = image.size
     side = min(width, height)
@@ -202,11 +191,11 @@ def centre_crop_square(image: Image.Image) -> Image.Image:
 
 
 class BranchDataset(Dataset):
-    """Load and preprocess RGB-D inputs with binary branch segmentation masks.
+    """Load aligned RGB-D inputs and binary branch targets.
 
-    RGB and depth images are centre-cropped and resized to ``input_size``.
-    The GT mask is not resized: its dimensions must already match the requested
-    input size, preventing silent changes to the label geometry.
+    RGB and depth are centre-cropped and resized. GT is neither cropped nor resized; it
+    must already describe that field of view at input_size. Channel order is R, G, B,
+    then grayscale depth. Depth is image intensity, not calibrated metres.
     """
 
     def __init__(
@@ -215,34 +204,48 @@ class BranchDataset(Dataset):
         input_size: int = 256,
         mask_threshold: int = 127,
     ) -> None:
-        """Initialise the dataset.
+        """Store paired samples and preprocessing settings.
 
         Args:
-            samples: Sample dictionaries returned by :func:`build_samples`.
-            input_size: Height and width of each model input.
-            mask_threshold: GT intensities strictly above this value are branch
-                pixels; all other pixels are treated as background.
+            samples: list[dict] from build_samples; rgb, depth, gt and key entries.
+            input_size: int; positive square side in pixels, default 256.
+            mask_threshold: int; grayscale cutoff, normally [0, 255]; GT > cutoff is
+                branch.
+
+        Returns:
+            None.
         """
         self.samples = samples
         self.input_size = input_size
         self.mask_threshold = mask_threshold
 
     def __len__(self) -> int:
-        """Return the number of paired samples."""
+        """Return the number of complete samples.
+
+        Returns:
+            int: Number of stored records.
+        """
         return len(self.samples)
 
     def __getitem__(self, index: int) -> tuple[torch.Tensor, torch.Tensor, str]:
-        """Load one sample and return its RGB-D tensor and binary target.
+        """Read and preprocess one RGB-D and branch-GT sample.
+
+        RGB is bilinearly resized, /255 then ImageNet standardised. Depth is converted
+        to L, nearest-neighbour resized and /255. Targets use GT > mask_threshold; 1
+        denotes branch and 0 background.
 
         Args:
-            index: Index of the sample to load.
+            index: int; Python list index into samples.
 
         Returns:
-            A tuple containing the input tensor ``[4, H, W]``, target tensor
-            ``[1, H, W]``, and sample identifier.
+            tuple[torch.Tensor, torch.Tensor, str]: Float32 input [4, S, S], binary
+                float32 target [1, S, S], and identifier; S is input_size.
 
         Raises:
-            RuntimeError: If the GT mask dimensions differ from ``input_size``.
+            IndexError: If index is outside samples.
+            KeyError: If a sample lacks a required entry.
+            OSError: If an input cannot be opened or decoded.
+            RuntimeError: If GT size differs from input_size.
         """
         sample = self.samples[index]
         size = (self.input_size, self.input_size)
@@ -282,11 +285,10 @@ class BranchDataset(Dataset):
 
 
 class PixelMLP(nn.Module):
-    """Classify each pixel independently using its four RGB-D input values.
+    """Classify each RGB-D pixel independently using dense layers.
 
-    The network consists only of fully connected layers and ReLU activations.
-    Spatial dimensions are temporarily flattened into a pixel batch, then
-    restored in the output so the model returns one logit per pixel.
+    Flattening pools pixels into a batch without mixing neighbours; output is a raw
+    branch logit per pixel.
     """
 
     def __init__(
@@ -294,11 +296,15 @@ class PixelMLP(nn.Module):
         in_features: int = 4,
         hidden_dims: tuple[int, ...] = (64, 32, 16),
     ) -> None:
-        """Build the MLP layers.
+        """Construct hidden dense layers and scalar output.
 
         Args:
-            in_features: Number of input features per pixel (four for RGB-D).
-            hidden_dims: Number of units in each hidden fully connected layer.
+            in_features: int; positive features per pixel, normally 4.
+            hidden_dims: tuple[int, ...]; positive hidden widths, default (64, 32,
+                16).
+
+        Returns:
+            None.
         """
         super().__init__()
         layers: list[nn.Module] = []
@@ -314,29 +320,40 @@ class PixelMLP(nn.Module):
         self.network = nn.Sequential(*layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Compute branch logits for an RGB-D batch.
+        """Map independent pixel features to branch logits.
 
         Args:
-            x: Input tensor with shape ``[batch, channels, height, width]``.
+            x: torch.Tensor; [B, in_features, H, W].
 
         Returns:
-            Logit tensor with shape ``[batch, 1, height, width]``.
+            torch.Tensor: Raw logits [B, 1, H, W]; sigmoid gives branch
+                probabilities.
+
+        Raises:
+            RuntimeError: If feature count or dtype/device is incompatible.
         """
         batch_size, channels, height, width = x.shape
+        # Move channels last so each dense-layer row contains one pixel, not a scanline.
         pixels = x.permute(0, 2, 3, 1).reshape(-1, channels)
         logits = self.network(pixels)
         return logits.reshape(batch_size, height, width).unsqueeze(1)
 
 
 def bce_loss(logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-    """Calculate weighted binary cross-entropy loss from logits.
+    """Compute binary cross-entropy directly from branch logits.
+
+    Positive-class weight 12 addresses sparse branch foreground.
 
     Args:
-        logits: Raw model predictions with shape matching ``targets``.
-        targets: Binary target mask, with values in {0, 1}.
+        logits: torch.Tensor; floating [B, 1, H, W] raw scores.
+        targets: torch.Tensor; same shape/device, floating labels in {0, 1}.
 
     Returns:
-        Scalar weighted binary cross-entropy loss.
+        torch.Tensor: Scalar mean loss.
+
+    Raises:
+        ValueError: If target and logit sizes differ.
+        RuntimeError: If tensor types or devices are incompatible.
     """
     positive_weight = torch.tensor(
         [POSITIVE_CLASS_WEIGHT], device=logits.device, dtype=logits.dtype
@@ -353,20 +370,24 @@ def evaluate(
     device: torch.device,
     threshold: float,
 ) -> dict[str, float]:
-    """Evaluate segmentation loss and pixel-level metrics over a data loader.
+    """Aggregate validation loss and foreground pixel metrics.
 
-    Metrics are aggregated across all pixels in the loader, rather than averaged
-    per image. Predictions are binarised using the supplied probability threshold.
+    Sets evaluation mode and disables gradients. Uses sigmoid(logits) >= threshold and
+    targets >=0.5. Epsilon 1e-8 stabilises ratios; empty foreground scores zero.
 
     Args:
-        model: Trained segmentation model.
-        loader: Data loader containing RGB-D inputs and GT masks.
-        device: Device used for model inference.
-        threshold: Probability threshold used to classify branch pixels.
+        model: torch.nn.Module mapping [B, 4, H, W] to [B, 1, H, W] logits.
+        loader: DataLoader yielding input, target and identifier batches.
+        device: torch.device; model must already be on it.
+        threshold: float; inclusive sigmoid cutoff, normally [0, 1].
 
     Returns:
-        Dictionary containing ``loss``, ``dice``, ``iou``, ``precision``, and
-        ``recall``.
+        dict[str, float]: Sample-weighted loss and pixel-micro dice, iou, precision
+            and recall.
+
+    Raises:
+        OSError: If dataset inputs cannot be read.
+        RuntimeError: If dataset geometry or model execution fails.
     """
     model.eval()
     total_loss = 0.0
@@ -404,23 +425,25 @@ def save_visualisations(
     count: int,
     threshold: float,
 ) -> None:
-    """Save side-by-side RGB-D, GT, prediction, and overlay visualisations.
+    """Save validation RGB, depth, GT, prediction and overlay panels.
 
-    Overlay colours indicate agreement and error regions:
-        - Yellow: predicted branch and GT branch.
-        - Green: GT branch missed by the model.
-        - Red: predicted branch absent from the GT mask.
+    Reverses RGB normalisation for display. Yellow marks overlap, green missed GT
+    branches, and red false foreground. Sets evaluation mode.
 
     Args:
-        model: Trained segmentation model.
-        dataset: Dataset to visualise, normally the validation dataset.
-        device: Device used for model inference.
-        output_dir: Directory where comparison images are written.
-        count: Maximum number of samples to visualise.
-        threshold: Probability threshold used to binarise predictions.
+        model: torch.nn.Module producing branch logits.
+        dataset: Dataset yielding ([4, H, W], [1, H, W], key).
+        device: torch.device matching model parameters.
+        output_dir: pathlib.Path; destination created if needed.
+        count: int; nonnegative maximum initial samples to render.
+        threshold: float in [0, 1]; inclusive sigmoid cutoff.
 
     Returns:
         None.
+
+    Raises:
+        OSError: If image reading or figure writing fails.
+        RuntimeError: If geometry or model execution fails.
     """
     output_dir.mkdir(parents=True, exist_ok=True)
     model.eval()
@@ -485,10 +508,14 @@ def save_visualisations(
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command-line options for training and evaluation.
+    """Parse MLP training options from the process command line.
 
     Returns:
-        Parsed command-line arguments.
+        argparse.Namespace: Dataset, output, model and training settings.
+
+    Raises:
+        SystemExit: If --help is requested or required arguments are
+            missing/invalid.
     """
     parser = argparse.ArgumentParser(
         description="Train a pixel-wise MLP for RGB-D branch segmentation.",
@@ -537,7 +564,22 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
-    """Run dataset preparation, training, evaluation, and artifact export."""
+    """Train, select by validation Dice and export checkpoint and metrics.
+
+    Uses a seeded shuffled sample split, not a held-out tree split. Writes history.csv,
+    val_metrics.csv and visualisations. Checkpoint selection uses the same validation
+    set. Use positive epochs and validation fraction strictly between 0 and 1.
+
+    Returns:
+        None.
+
+    Raises:
+        SystemExit: If CLI parsing fails or --help is requested.
+        FileNotFoundError: If dataset root is absent.
+        RuntimeError: If pairing, split or model execution fails.
+        OSError: If reading inputs or writing outputs fails.
+        IndexError: If zero epochs leave history empty at CSV export.
+    """
     args = parse_args()
     seed_everything(args.seed)
     args.output_dir.mkdir(parents=True, exist_ok=True)

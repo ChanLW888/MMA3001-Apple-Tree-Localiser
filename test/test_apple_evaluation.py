@@ -1,4 +1,14 @@
-﻿import csv
+﻿"""Test matching, exports and saved-output consistency.
+
+Some methods require data, saved CSVs or Git HEAD; the regression runs all-frame
+detection. Export fixtures have stale path mocking and missing timing fields, documented
+below. Full discovery is not inference-free verification.
+
+Example:
+    From test/: python -m unittest test_apple_evaluation.EvaluationTests.test_cardinality_before_distance
+"""
+
+import csv
 import importlib.util
 import subprocess
 import sys
@@ -16,22 +26,63 @@ import compare_apple_detectors as compare
 
 
 def apple(x,y=0):
+    """Create a one-pixel synthetic matching record.
+
+    Some in-memory matching tests intentionally use negative x without CSV validation.
+
+    Args:
+        x: float; x pixel coordinate, nonnegative for valid CSV geometry.
+        y: float; y pixel coordinate, default 0.
+
+    Returns:
+        dict: Unit-area inclusive box centred at (x, y), blank confidence and
+            apple_id=1.
+    """
     return dict(image='a.png',apple_id=1,confidence='',area_px=1,branch_overlap=1,
                 cx_px=x,cy_px=y,x1=x,y1=y,x2=x,y2=y,red_score=1)
 
 
 class EvaluationTests(unittest.TestCase):
+    """Exercise detector exports and reference-relative matching.
+
+    Contains synthetic checks, output-dependent checks and an all-frame detector
+    regression. Full discovery is not inference-free verification.
+    """
     def test_exact_threshold_and_one_to_one(self):
+        """Assert inclusive cutoffs and one-to-one assignment.
+
+        Returns:
+            None.
+
+        Raises:
+            AssertionError: If a tested contract is not satisfied.
+        """
         self.assertEqual(len(compare.match_centroids([apple(0)],[apple(10)],10)),1)
         self.assertEqual(compare.match_centroids([apple(0)],[apple(10.01)],10),[])
         self.assertEqual(len(compare.match_centroids([apple(0),apple(1)],[apple(0)],10)),1)
 
     def test_cardinality_before_distance(self):
         # r0 can use either prediction; r1 can use only p0.
+        """Assert valid pair count takes priority over shortest distance.
+
+        Returns:
+            None.
+
+        Raises:
+            AssertionError: If a tested contract is not satisfied.
+        """
         matches=compare.match_centroids([apple(0),apple(-9)],[apple(-1),apple(9)],10)
         self.assertEqual({(i,j) for i,j,d in matches},{(0,1),(1,0)})
 
     def test_empty_and_metrics(self):
+        """Assert empty-instance handling and metric formulas.
+
+        Returns:
+            None.
+
+        Raises:
+            AssertionError: If a tested contract is not satisfied.
+        """
         self.assertEqual(compare.match_centroids([],[],10),[])
         rows,pairs,s=compare.evaluate({'zero','missing'},{'missing':[apple(0)]},{},10)
         self.assertEqual(s['count_mae'],.5)
@@ -44,6 +95,14 @@ class EvaluationTests(unittest.TestCase):
         self.assertEqual(compare.agreement(2,1,2)['recall_relative_to_rfdetr'],.5)
 
     def test_exact_filenames_and_row_order(self):
+        """Assert exact filename intersection regardless of dictionary order.
+
+        Returns:
+            None.
+
+        Raises:
+            AssertionError: If a tested contract is not satisfied.
+        """
         ref={'a.png':[apple(0)],'b.png':[]}
         pred={'b.png':[],'a.png':[apple(0)]}
         _,_,s=compare.evaluate(set(ref)&set(pred),ref,pred,0)
@@ -51,6 +110,14 @@ class EvaluationTests(unittest.TestCase):
         self.assertEqual(set(ref)&{'A.png'},set())
 
     def test_duplicates_validation_counts_and_zero(self):
+        """Assert duplicate validation and zero-count handling.
+
+        Returns:
+            None.
+
+        Raises:
+            AssertionError: If a tested contract is not satisfied.
+        """
         with tempfile.TemporaryDirectory() as tmp:
             p=Path(tmp)/'instances.csv'
             a=apple(0); b=dict(a,apple_id=2)
@@ -75,6 +142,19 @@ class EvaluationTests(unittest.TestCase):
                 compare.load_instances(p)
 
     def test_export_coordinate_centroid_and_csv(self):
+        """Check synthetic component geometry and attempted CSV round trip.
+
+        Pre-existing fixture issue: patches nonexistent CSV_PATH; save_csv uses
+        COUNTS_CSV, INSTANCES_CSV and TIMINGS_CSV. Result also lacks timing fields. This
+        is not currently a safe isolated export check.
+
+        Returns:
+            None.
+
+        Raises:
+            AssertionError: If a tested contract is not satisfied.
+            AttributeError: If patching nonexistent CSV_PATH.
+        """
         rgb=np.zeros((40,50,3),dtype=np.uint8)
         rgb[10:20,20:30,0]=255
         depth=np.ones((40,50),dtype=np.uint8)
@@ -98,6 +178,19 @@ class EvaluationTests(unittest.TestCase):
                 self.assertEqual(compare.load_counts(Path(tmp)/'apple_counts.csv',groups),{'a.png':1})
 
     def test_original_detector_regression_all_frames(self):
+        """Compare current detection with HEAD across all complete frames.
+
+        Reads HEAD using git show and runs detection over the dataset. Requires Git
+        history and summer inputs; performs inference and is excluded from
+        documentation-only verification.
+
+        Returns:
+            None.
+
+        Raises:
+            AssertionError: If a tested contract is not satisfied.
+            subprocess.CalledProcessError: If git show cannot read HEAD.
+        """
         original=subprocess.check_output(['git','show','HEAD:src/apple_predictor_v1.py'],cwd=ROOT).decode('utf-8')
         namespace={'__file__':str(ROOT/'src/apple_predictor_v1.py'),'__name__':'original_detector'}
         exec(compile(original,'original_detector','exec'),namespace)
@@ -112,6 +205,18 @@ class EvaluationTests(unittest.TestCase):
             self.assertEqual(expected,actual,path.name)
 
     def test_actual_instance_count_consistency(self):
+        """Check saved counts against historical output-directory fixtures.
+
+        Requires apple_detection and apple_rfdetr_boxes_only under outputs. The latter
+        is not the current RF-DETR default.
+
+        Returns:
+            None.
+
+        Raises:
+            AssertionError: If a tested contract is not satisfied.
+            OSError: If saved output fixtures are missing.
+        """
         for directory in ['apple_detection','apple_rfdetr_boxes_only']:
             path=ROOT/'outputs'/directory
             instances,_=compare.load_instances(path/'apple_instances.csv')

@@ -1,72 +1,23 @@
-# Source Code (`src/`)
+# Source scripts
 
-This directory contains the scripts used to prepare the dataset, train or run apple-segmentation models, and detect/localise apples.
+Run commands from the repository root. Each module uses Google-style docstrings. The [root guide](../README.md) provides setup, inputs, full invocations, limitations and testing instructions.
 
-> Run commands from the **repository root**, not from inside `src/`, so relative input and output paths resolve consistently.
-
-## Scripts
-
-| Script | Purpose | Typical command |
+| Script | Responsibility | Invocation |
 |---|---|---|
-| `dataset_organiser.py` | Organises the source dataset into the project’s expected structure. | `python src/dataset_organiser.py` |
-| `apple_predictor.py` | Runs the custom RGB/depth-based apple detection/localisation workflow. The current workflow also uses branch ground-truth masks for its region-of-interest filtering. | `python src/apple_predictor.py` |
-| `apple_segmenter_v1.py` | Runs the RF-DETR apple instance-segmentation baseline. | `python src/apple_segmenter_v1.py` |
-| `apple_segmenter_train.py` | Trains the RF-DETR apple instance-segmentation model. | `python src/apple_segmenter_train.py` |
-| `train_pixel_mlp_documented.py` | Trains the pixel-wise RGB-D MLP for binary tree-branch segmentation. | See the script’s `--help` output. |
-| `resnet34_unet_train.py` | Trains the basic ResNet-34 U-Net for binary tree-branch segmentation. | See the script’s `--help` output. |
-| `improved_resnet34_unet_train.py` | Trains the improved ResNet-34 U-Net with ASPP, attention-gated skip connections, and residual decoder blocks. | See the script’s `--help` output. |
+| `dataset_organiser.py` | Copy flat orchard PNGs into season/modality folders; basic PNG checks | `python src/dataset_organiser.py` |
+| `preprocess_roboflow_dataset.py` | Merge COCO apple-* categories; export becomes valid | `python src/preprocess_roboflow_dataset.py` |
+| `train_baseline.py` | Pixel-wise RGB-D MLP branch segmentation | `python src/train_baseline.py --data-root data/Organised` |
+| `train_unet.py` | Basic RGB-D ResNet-34 U-Net | `python src/train_unet.py --data-root data/Organised` |
+| `train_improved_unet.py` | ASPP, attention and residual U-Net; AdamW | `python src/train_improved_unet.py --data-root data/Organised` |
+| `apple_predictor_v1.py` | Red-component detection with depth validity and branch GT | `python src/apple_predictor_v1.py` |
+| `apple_segmenter_train.py` | RF-DETR medium apple COCO training, 50 epochs/batch 1 | `python src/apple_segmenter_train.py` |
+| `apple_segmenter_v1.py` | RF-DETR apple inference with GT or externally predicted branch masks | `python src/apple_segmenter_v1.py` |
+| `compare_apple_detectors.py` | Read saved predictions and measure RF-DETR-relative agreement | `python src/compare_apple_detectors.py --max-distance 30` |
 
-The exact scripts present in a checkout may differ as the project evolves. Check the repository before running a command, and use each script’s `--help` option where supported.
+The branch trainers and comparison accept `--help`. Apple inference, COCO preparation, dataset organisation and RF-DETR training use constants rather than an argparse interface. Importing the organiser copies files; importing COCO preparation/RF-DETR training checks dataset paths. Do not import these as passive utility modules.
 
-## Branch-segmentation training
+Branch input is `[B, 4, H, W]`: normalised RGB and grayscale depth/255. Targets are `[B, 1, H, W]` binary branches, not apple masks. GT must already match the centred input geometry. Models return logits. All branch trainers select checkpoints by validation Dice; validation is not independent testing. The MLP has no spatial context and uses weighted BCE; U-Nets use plain BCE.
 
-The three branch-segmentation models use RGB plus a grayscale depth channel as a four-channel input and predict a binary branch mask.
+Apple detections are original-image 2D pixel coordinates. Traditional detection uses GT >0/full-frame resizing; RF-DETR defaults to GT >127/central-square placement. Their shared dilation size does not make their regions identical. Predicted RF-DETR branch mode only reads externally exported 0/255 PNGs; it does not run a branch model. Confidence is blank for traditional detections and a model score for RF-DETR. RF-DETR pseudo-ground truth is not human-verified evaluation annotation.
 
-Example commands (run from the repository root):
-
-```bash
-python src/train_pixel_mlp_documented.py --help
-python src/resnet34_unet_train.py --help
-python src/improved_resnet34_unet_train.py --help
-```
-
-The training scripts require a dataset root. Supply the path using `--data-root` when launching a training run. For example:
-
-```bash
-python src/resnet34_unet_train.py --data-root /path/to/Organised
-```
-
-Replace `/path/to/Organised` with the actual path to your dataset. Do not commit private, large, or restricted dataset files to Git unless the project explicitly permits it.
-
-### Model differences
-
-- **Pixel-wise MLP:** predicts each pixel from its RGB-D values independently; it does not explicitly model neighbouring-pixel relationships.
-- **Basic ResNet-34 U-Net:** uses a ResNet-34 encoder and U-Net-style decoder with skip connections.
-- **Improved ResNet-34 U-Net:** adds multi-scale ASPP context, attention-gated skips, and residual decoder blocks.
-
-The scripts use their own configured defaults. Refer to the code and `--help` output for the exact hyperparameters and available options.
-
-## Outputs
-
-Depending on the script and its arguments, generated files may include model checkpoints, CSV metrics, training history, visualisation images, and detection results. Known output locations used by the existing workflows include:
-
-- `outputs/apple_detection/`
-- `outputs/apple_rfdetr/`
-- `outputs/rfdetr_apple_tree/checkpoint_best_total.pth`
-
-Output paths can be changed by command-line arguments or script configuration. Generated outputs should generally not be committed unless they are small, intentional project artefacts.
-
-## Dataset and evaluation notes
-
-- The branch-segmentation scripts pair RGB, depth, and ground-truth mask files using filename identifiers.
-- The training workflow uses a shuffled train/validation split; the validation set is not an independent test set.
-- Winter images have been used for qualitative inference, but no winter ground-truth branch masks were available in the described workflow.
-- The custom apple detector uses branch ground-truth masks for its region-of-interest filter; it should not be described as a fully predicted-branch-mask pipeline unless that part of the implementation is changed.
-- The detector’s depth input is used as a validity filter in the described version; its localisation output is 2D rather than a reconstructed 3D apple position.
-
-## Development conventions
-
-- Keep preprocessing and checkpoint formats consistent between training and inference.
-- Document any change to model inputs, mask thresholds, file naming, or output paths.
-- Avoid committing datasets, checkpoints, generated plots, virtual environments, or cache files unless required.
-- When changing a script, update this file and the root README if its purpose, invocation, or outputs change.
+See [output formats](../outputs/README.md), [data requirements](../data/README.md) and [branch architecture guide](../docs/source/models.md). Winter inference lives in [test/winter_inference.py](../test/winter_inference.py); its output names do not directly satisfy the RF-DETR predicted-mask convention.

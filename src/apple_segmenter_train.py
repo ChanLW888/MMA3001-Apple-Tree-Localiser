@@ -1,3 +1,18 @@
+"""Train the RF-DETR medium apple instance-segmentation model.
+
+Uses cleaned COCO train/valid splits in data/apple_tree_clean. Requests 50 epochs and
+batch size 1; remaining defaults belong to rfdetr. Writes outputs/rfdetr_apple_tree.
+Import checks paths and prints configuration; training requires main. Cached pretrained
+weights may be needed offline.
+
+Raises:
+    FileNotFoundError: If data folders or COCO files are missing.
+    ImportError: If rfdetr is unavailable.
+
+Example:
+    python src/apple_segmenter_train.py
+"""
+
 from pathlib import Path
 
 from rfdetr import RFDETRSegMedium
@@ -82,6 +97,19 @@ print("=" * 60)
 
 def main():
 
+    """Train RFDETRSegMedium on cleaned apple COCO splits.
+
+    Uses 50 epochs, batch size 1 and library defaults otherwise. Writes
+    outputs/rfdetr_apple_tree. Module checks dataset paths at import. Construction may
+    retrieve pretrained weights if uncached.
+
+    Returns:
+        None.
+
+    Raises:
+        OSError: If data, pretrained weights or output cannot be accessed.
+        RuntimeError: If training fails.
+    """
     print("\nLoading RF-DETR Segmentation Medium...")
 
     model = RFDETRSegMedium()

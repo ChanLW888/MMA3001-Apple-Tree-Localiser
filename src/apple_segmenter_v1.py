@@ -1,11 +1,12 @@
-"""
-RF-DETR apple instance segmentation constrained to Y-shaped scaffold branches.
+"""Run branch-guided RF-DETR apple instance segmentation.
 
-Default branch source: summer ground-truth (GT) branch masks.
-Optional: externally predicted branch masks placed in PREDICTED_BRANCH_DIR.
+Reads outputs/rfdetr_apple_tree/checkpoint_best_total.pth and writes
+outputs/apple_rfdetr_instances. Defaults to summer branch GT (>127) with central
+placement. Predicted mode only reads exported <RGB-stem>_branch.png masks. Does not run
+branch inference or consume depth. Model detections are not verified apple annotations.
 
-Save this script in your project's scripts/ folder, one level below project root.
-Run: python src/rfdetr_branch_guided_visual.py
+Example:
+    python src/apple_segmenter_v1.py
 """
 from pathlib import Path
 import csv
@@ -45,15 +46,25 @@ TEST_FRAMES = 5
 # Set it back to 1 for a complete fresh run. CSVs are recreated on each run.
 START_FRAME = 1
 
-# IMPORTANT: GT masks at 256x256 represent the central 480x480 crop
-# of each original 640x480 RGB image, according to the model preprocessing.
-# Use "center_crop" for that geometry. "full_resize" instead stretches GT
-# over the full RGB image, like the original traditional CV script.
+# Assumption: GT describes the square centre crop used by branch preprocessing.
+# For 640x480 RGB this is the central 480x480 field of view; verify annotation
+# provenance separately. "full_resize" instead stretches GT over the full RGB
+# grid, as the traditional detector does.
 BRANCH_MASK_ALIGNMENT = "center_crop"
 # -----------------------------------------------------------------
 
 
 def parse_rgb_filename(path: Path):
+    """Parse tree, season and time from an RGB PNG basename.
+
+    Args:
+        path: pathlib.Path; expected
+            R<digits>N<digits>_<Summer|Winter>_RGB-<time>.png.
+
+    Returns:
+        dict[str, str] or None: tree, season and time in original case, or None for
+            unmatched names.
+    """
     match = re.fullmatch(
         r"(?P<tree>R\d+N\d+)_(?P<season>Summer|Winter)_RGB-"
         r"(?P<time>.+)\.png",
@@ -64,6 +75,22 @@ def parse_rgb_filename(path: Path):
 
 
 def corresponding_branch_path(image_path: Path, info: dict) -> Path:
+    """Resolve a GT or externally exported predicted branch mask.
+
+    Default source is GT. This does not run a branch network or verify predicted-mask
+    provenance.
+
+    Args:
+        image_path: pathlib.Path to the RGB frame.
+        info: dict[str, str]; tree, season and time.
+
+    Returns:
+        pathlib.Path: GT path or <RGB-stem>_branch.png in PREDICTED_BRANCH_DIR.
+
+    Raises:
+        ValueError: If BRANCH_SOURCE is not gt or predicted.
+        KeyError: If GT metadata is incomplete.
+    """
     if BRANCH_SOURCE == "gt":
         return GT_DIR / (
             f'{info["tree"]}_{info["season"]}_GT-{info["time"]}.png'
@@ -75,7 +102,25 @@ def corresponding_branch_path(image_path: Path, info: dict) -> Path:
 
 
 def align_branch_mask(mask: np.ndarray, image_shape, alignment: str):
-    """Map a branch mask to original RGB dimensions without corrupting labels."""
+    """Place a binary branch mask in original RGB coordinates.
+
+    Thresholds >127 before resizing. Same-size masks return directly. center_crop
+    expands to min(H, W) square and centres on a zero canvas; full_resize stretches over
+    the frame. Neither verifies true GT geometry. Input encoded as 0/1 becomes empty.
+
+    Args:
+        mask: numpy.ndarray; grayscale [Hm, Wm] or BGR mask, expected 0/255
+            encoding.
+        image_shape: tuple[int, ...]; starts with original (height, width).
+        alignment: str; full_resize or center_crop when shapes differ.
+
+    Returns:
+        numpy.ndarray: uint8 [H, W] branch mask in {0, 1}.
+
+    Raises:
+        ValueError: If shapes differ and alignment is unsupported.
+        cv2.error: If conversion or resizing fails.
+    """
     height, width = image_shape[:2]
     if mask.ndim == 3:
         mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
@@ -103,7 +148,21 @@ def align_branch_mask(mask: np.ndarray, image_shape, alignment: str):
 
 
 def make_branch_zone(branch_mask: np.ndarray):
-    """Optionally keep largest branch component, then dilate its mask."""
+    """Optionally retain the largest branch component, then dilate.
+
+    BRANCH_DILATION is ellipse diameter in source-image pixels. Largest-component
+    filtering is disabled by default.
+
+    Args:
+        branch_mask: numpy.ndarray; aligned [H, W], foreground >0.
+
+    Returns:
+        numpy.ndarray: uint8 [H, W] proximity zone in {0, 1}.
+
+    Raises:
+        ValueError: If BRANCH_DILATION <1.
+        cv2.error: If component analysis or morphology fails.
+    """
     binary = (branch_mask > 0).astype(np.uint8)
     if KEEP_LARGEST_BRANCH_COMPONENT and np.any(binary):
         n, labels, stats, _ = cv2.connectedComponentsWithStats(binary, 8)
@@ -120,7 +179,27 @@ def make_branch_zone(branch_mask: np.ndarray):
 
 
 def filter_instances(detections, image_shape, zone):
-    """Keep whole RF-DETR instances overlapping the branch region."""
+    """Retain whole RF-DETR masks with sufficient branch-zone overlap.
+
+    Missing masks/confidences yield no instances. Current constants require confidence
+    >=0.20, mask >0.50, area >=1 and overlap >=0.05. Uses nearest-neighbour resizing. No
+    class-ID filtering occurs; checkpoint is assumed apple-only. Masks remain whole, not
+    clipped to the zone.
+
+    Args:
+        detections: RF-DETR/supervision detections with mask [N, Hm, Wm] and
+            confidence [N], or None.
+        image_shape: tuple[int, ...]; original (H, W, ...) shape.
+        zone: numpy.ndarray; aligned binary [H, W] proximity region.
+
+    Returns:
+        list[dict]: mask (bool [H, W]), confidence, area (pixels), overlap,
+            inclusive xyxy bbox and mean (x, y) centroid.
+
+    Raises:
+        ValueError: If a mask is not 2D or zone cannot broadcast.
+        cv2.error: If resizing fails.
+    """
     height, width = image_shape[:2]
     kept = []
     if detections is None or len(detections) == 0:
@@ -137,6 +216,7 @@ def filter_instances(detections, image_shape, zone):
         raw_mask = np.asarray(masks[idx])
         if raw_mask.ndim != 2:
             raise ValueError(f"RF-DETR mask {idx} has shape {raw_mask.shape}")
+        # Threshold before nearest-neighbour resizing to keep a discrete instance mask.
         binary = (raw_mask > INSTANCE_MASK_THRESHOLD).astype(np.uint8)
         if binary.shape != (height, width):
             binary = cv2.resize(
@@ -165,9 +245,22 @@ def filter_instances(detections, image_shape, zone):
 
 
 def render_apple_annotations(image_bgr, boxes, centroids, color_bgr):
-    """Draw identical box, centre, index and count styling for either detector.
+    """Render boxes, centres, indices and total count on a copy.
 
-    All boxes are inclusive (x1, y1, x2, y2); image is OpenCV BGR.
+    zip truncates unequal box/centroid sequences; callers should supply one centre per
+    box.
+
+    Args:
+        image_bgr: numpy.ndarray; uint8 [H, W, 3] OpenCV BGR.
+        boxes: Sequence of inclusive (x1, y1, x2, y2) boxes in pixels.
+        centroids: Sequence of floating (x, y) centres paired with boxes.
+        color_bgr: tuple[int, int, int]; BGR colour in [0, 255].
+
+    Returns:
+        numpy.ndarray: Annotated BGR copy with original shape/dtype.
+
+    Raises:
+        cv2.error: If drawing arguments are invalid.
     """
     annotated = image_bgr.copy()
     for index, (box, center) in enumerate(zip(boxes, centroids), start=1):
@@ -183,6 +276,27 @@ def render_apple_annotations(image_bgr, boxes, centroids, color_bgr):
 
 
 def save_outputs(image, image_path, branch, zone, instances):
+    """Write cyan annotations, uint16 instance IDs and branch-zone PNGs.
+
+    ID 0 is background; instances start at 1. Later masks overwrite earlier IDs at
+    overlaps; CSV areas still describe whole instances.
+
+    Args:
+        image: numpy.ndarray; uint8 [H, W, 3] BGR.
+        image_path: pathlib.Path; stem names saved files.
+        branch: numpy.ndarray; accepted but unused.
+        zone: numpy.ndarray; [H, W] binary 0/1 proximity mask.
+        instances: list[dict] from filter_instances.
+
+    Returns:
+        tuple[pathlib.Path, pathlib.Path, pathlib.Path]: Annotated image,
+            instance-ID mask and zone image.
+
+    Raises:
+        ValueError: If count exceeds uint16 capacity.
+        OSError: If directories or image files cannot be written.
+        cv2.error: If encoding or drawing fails.
+    """
     out_ann = OUTPUT_DIR / "annotated"
     out_masks = OUTPUT_DIR / "masks"
     out_zones = OUTPUT_DIR / "branch_zones"
@@ -195,6 +309,7 @@ def save_outputs(image, image_path, branch, zone, instances):
     id_map = np.zeros((h, w), dtype=np.uint16)
     # Segmentation masks are saved separately; no coloured mask overlay.
     for apple_id, instance in enumerate(instances, start=1):
+        # Later IDs win overlap pixels; CSV geometry still describes whole masks.
         id_map[instance["mask"]] = apple_id
 
     boxes = [instance["bbox"] for instance in instances]
@@ -216,6 +331,24 @@ def save_outputs(image, image_path, branch, zone, instances):
 
 
 def main():
+    """Load RF-DETR and export branch-guided apple predictions.
+
+    Defaults to summer branch GT with central placement. Skips missing/unreadable inputs
+    and unexpected names. Recreates CSVs even for START_FRAME >1. model.predict reads
+    RGB paths; no depth input is used. Initialisation may require cached auxiliary
+    weights.
+
+    Returns:
+        None.
+
+    Raises:
+        FileNotFoundError: If RGB directory or checkpoint is missing.
+        ImportError: If rfdetr cannot be imported.
+        ValueError: If overlap/start-frame settings, mask rank or alignment are
+            invalid.
+        RuntimeError: If no selected PNGs exist or model execution fails.
+        OSError: If outputs cannot be written.
+    """
     if not RGB_DIR.is_dir():
         raise FileNotFoundError(f"Missing RGB directory: {RGB_DIR}")
     if not RFDETR_CHECKPOINT.is_file():
@@ -252,6 +385,17 @@ def main():
 
     def sync_cuda():
         # CUDA kernels execute asynchronously; sync for accurate GPU inference timing.
+        """Synchronise pending CUDA work for inference timing.
+
+        Does nothing without CUDA; barriers keep asynchronous kernels inside the timed
+        interval.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If CUDA synchronisation fails.
+        """
         if torch.cuda.is_available():
             torch.cuda.synchronize()
 

@@ -1,36 +1,34 @@
 # Training and evaluation
 
-## Training procedure
+## Training configuration
 
-The documented branch-segmentation scripts use a shuffled train/validation
-split. Training samples are shuffled with a configured random seed, and model
-selection is based on validation Dice.
+| Setting | Pixel MLP | Basic U-Net | Extended U-Net |
+|---|---|---|---|
+| Default epochs / batch | 60 / 8 | 60 / 8 | 60 / 8 |
+| Loss | BCE with positive-class weight 12 | Plain BCE | Plain BCE |
+| Optimiser | Adam | Adam | AdamW, weight decay 1e-4 |
+| Default learning rate | 1e-3 | 1e-4 | 3e-4 |
+| Early-stop patience | 12 | 12 | 15 |
+| LR scheduler | None | None | ReduceLROnPlateau on validation Dice, factor 0.5, patience 4, min 1e-6 |
 
-The scripts use binary cross-entropy with logits (BCEWithLogitsLoss). The
-improved model uses AdamW and a validation-Dice-driven learning-rate scheduler;
-the MLP and basic U-Net use their own configured optimiser settings. Refer to
-the actual script and command-line arguments for the exact values used in a
-given run.
+Defaults are source configuration, not results of an independently verified run. CLI options can override supported values. Supply positive epochs, positive size/batch and a validation fraction strictly between 0 and 1. CLI parsing does not comprehensively validate all numeric ranges; zero epochs can leave history empty and fail during export.
 
-Early stopping can terminate training when validation Dice does not improve
-for the configured patience. The best checkpoint is saved according to
-validation Dice.
+All trainers seed Python/NumPy/PyTorch (default 42), shuffle complete summer samples and reserve `max(1, round(N * val_fraction))` samples for validation (default fraction 0.20). A split without training samples raises RuntimeError. This is a sample-level split, not a held-out-tree protocol, and correlated frames may cross partitions. Seeding does not ensure bitwise deterministic GPU kernels.
+
+Model selection uses highest validation Dice; patience counts epochs without improvement. A nonpositive early-stopping value disables that stop condition. The best state is restored before final validation and panel export. Validation is reused for model selection, so final metrics are not independent test performance.
 
 ## Metrics
 
-For binary branch segmentation:
+Prediction is sigmoid(logit) >=threshold (default 0.5); target foreground is >=0.5. TP/FP/FN are summed over all validation pixels. Dice is `2TP/(2TP+FP+FN+eps)`, IoU `TP/(TP+FP+FN+eps)`, precision `TP/(TP+FP+eps)` and recall `TP/(TP+FN+eps)`, with eps=1e-8. Empty foreground therefore scores zero. Batch loss is weighted by sample count and divided by dataset length, rather than averaged equally per batch.
 
-- **Dice:** overlap between predicted and ground-truth foreground masks.
-- **IoU:** intersection divided by union of the foreground masks.
-- **Precision:** fraction of predicted foreground pixels that are correct.
-- **Recall:** fraction of ground-truth foreground pixels recovered.
+`history.csv` stores epoch/training loss/validation metrics. `val_metrics.csv` stores final best-state validation metrics. Checkpoints and comparison panels are described in the output README.
 
-The probability threshold controls conversion from model logits to a binary
-prediction and affects the reported overlap metrics.
+## Winter and apple interpretation
 
-## Interpretation limits
+Winter inference produces qualitative branch masks and synchronised model-forward timing; it requires no GT and cannot report winter segmentation accuracy. Timing excludes preprocessing, transfer, sigmoid/thresholding and saving. Hardware/runtime results are not claimed here.
 
-The validation set is used for model selection and is not an independent test
-set. Validation results should not be described as unbiased test performance.
-Winter predictions without ground-truth masks support qualitative inspection
-only, not quantitative claims about winter generalisation.
+Apple comparison is a separate workflow on saved CSVs. Its RF-DETR reference is pseudo-ground truth, and branch GT masks are not apple annotations. Reference-relative F1, count agreement and conditional accepted-match distances must not be presented as independently verified detection/localisation accuracy. See the root README for different branch alignment rules and other confounders.
+
+## Testing boundaries
+
+Synthetic matching tests can validate threshold inclusivity, one-to-one cardinality, metrics and CSV validation without orchard inference. Full test discovery also includes an all-frame detector regression and output-dependent fixtures. A stale CSV-path mock, missing export timing fields and historical output-directory assumptions are documented in the verification report; they were not fixed in this documentation-only task.

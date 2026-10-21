@@ -1,3 +1,17 @@
+"""Copy flat orchard PNGs into season/modality directories.
+
+Running or importing immediately creates directories, copies matching files from
+data/Dataset (With Summer GT) to data/Organised and prints counts/basic PNG checks.
+Actual path constants use Windows separators and are relative to the working directory.
+Copies can overwrite existing destinations. Does not resample or align images.
+
+Raises:
+    OSError: If source listing, directory creation or copying fails.
+
+Example:
+    From repository root: python src/dataset_organiser.py
+"""
+
 import os
 import re
 import shutil
@@ -106,7 +120,25 @@ print(f"\nGrand total: {grand_total}")
 
 
 def read_png(filename):
-    """Read an 8-bit RGB or grayscale PNG."""
+    """Decode basic 8-bit grayscale or RGB PNG scanlines.
+
+    Reverses PNG filters modulo 256, including Paeth. Does not validate signature, CRC
+    or interlace method; this is a minimal checker, not a general PNG validator.
+
+    Args:
+        filename: str or os.PathLike; non-interlaced PNG, colour type 0 or 2.
+
+    Returns:
+        tuple[int, int, int, list[int]]: Width, height, channels (1 or 3) and flat
+            row-major interleaved bytes in [0, 255].
+
+    Raises:
+        ValueError: If bit depth, colour type or row filter is unsupported.
+        OSError: If reading fails.
+        zlib.error: If compressed data is invalid.
+        struct.error: If chunk fields are truncated.
+        IndexError: If decompressed rows are truncated.
+    """
 
     with open(filename, "rb") as f:
 

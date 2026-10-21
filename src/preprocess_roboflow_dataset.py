@@ -1,3 +1,17 @@
+"""Convert COCO apple-* categories into one apple class.
+
+Maps data/apple tree.v1i.coco-segmentation/train and export to
+data/apple_tree_clean/train and valid. Retains all image records, including missing
+images whose copies are skipped. Annotation origin and independence from orchard
+evaluation require verification. Source path checks run on import.
+
+Raises:
+    FileNotFoundError: If configured folders or annotation files are absent.
+
+Example:
+    python src/preprocess_roboflow_dataset.py
+"""
+
 from pathlib import Path
 import json
 import shutil
@@ -65,6 +79,27 @@ if not VALID_JSON.exists():
 
 def process_split(source_dir, annotation_file, output_dir):
 
+    """Copy a COCO split and merge apple-* categories into class 1.
+
+    Keeps all images, including negative examples, and preserves segmentation geometry.
+    Missing image records remain in COCO despite skipped copies; check output
+    completeness separately. Reassigns annotation IDs sequentially.
+
+    Args:
+        source_dir: pathlib.Path containing images.
+        annotation_file: str or pathlib.Path; COCO JSON with images, annotations and
+            categories.
+        output_dir: pathlib.Path; split destination created if needed.
+
+    Returns:
+        dict[str, int]: images, apple_instances, copied_images and missing_images.
+
+    Raises:
+        RuntimeError: If no category starts with apple- (case-insensitive).
+        json.JSONDecodeError: If annotation JSON is invalid.
+        KeyError: If required category/image fields are absent.
+        OSError: If reading, copying or writing fails.
+    """
     print("\n" + "=" * 60)
     print(f"PROCESSING: {source_dir.name}")
     print("=" * 60)
@@ -209,6 +244,7 @@ def process_split(source_dir, annotation_file, output_dir):
                 f"WARNING: image not found: {source_image}"
             )
 
+            # The image record remains in JSON; warn rather than silently drop its labels.
             missing_images += 1
             continue
 
@@ -267,6 +303,19 @@ def process_split(source_dir, annotation_file, output_dir):
 
 def main():
 
+    """Prepare train and valid apple-only COCO splits and print counts.
+
+    Maps source train to train and export to valid. Module-level checks require source
+    paths even on import.
+
+    Returns:
+        None.
+
+    Raises:
+        RuntimeError: If no apple-* categories exist.
+        OSError: If annotation reading, copying or writing fails.
+        json.JSONDecodeError: If JSON is malformed.
+    """
     print("=" * 60)
     print("APPLE DATASET PREPROCESSING")
     print("=" * 60)

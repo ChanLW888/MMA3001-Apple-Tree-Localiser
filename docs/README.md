@@ -1,34 +1,29 @@
-# Branch Segmentation Documentation
+# Branch segmentation documentation
 
-This Sphinx project documents **only the branch-segmentation part** of the
-Apple Tree Localiser repository. Apple detection, RF-DETR, and other apple
-scripts are deliberately excluded for now.
+The Sphinx site provides a static guide to RGB-D branch segmentation. Apple detection, RF-DETR and detector comparison are documented in the [root README](../README.md), [source README](../src/README.md) and [output README](../outputs/README.md). The site does not import model scripts or generate API pages from their docstrings.
 
-## Build the HTML website
+## Build HTML
 
-Run these commands from the repository root:
+With documentation dependencies already available, run from the repository root:
 
-```bash
-python -m pip install -r docs/requirements-docs.txt
+```powershell
 python -m sphinx -b html docs/source docs/_build/html
 ```
 
-Then open `docs/_build/html/index.html` in your browser.
+For a separately authorised environment setup, the existing dependency specification supports:
 
-## Add this to your repository
+```powershell
+python -m pip install -r docs/requirements-docs.txt
+```
 
-Copy the contents of this package into your repository's `docs/` directory.
-If you already have a `docs/` folder, back it up first and merge the files
-rather than overwriting unrelated work.
+No installation or build was performed during the documentation-only update. Open `docs/_build/html/index.html` after building; generated HTML is ignored by Git. No hosted documentation URL is configured in the maintained files.
 
-The API page is intentionally written as a branch-segmentation guide rather
-than importing every Python script. This prevents Sphinx from trying to import
-apple scripts or optional packages such as `rfdetr` while generating these
-pages. The model pages are maintained documentation and do not require the
-training environment to execute.
+## Maintained pages
 
-## Script names
+- [Overview](source/overview.md)
+- [Data and preprocessing](source/data_and_preprocessing.md)
+- [Architectures](source/models.md)
+- [Training and evaluation](source/training_and_evaluation.md)
+- [Usage](source/usage.md)
 
-The commands in the source guide use the branch-training filenames discussed
-so far. If the filenames in your current `src/` folder differ, update the
-examples in `source/usage.md` to match your actual filenames.
+The Sphinx configuration is [conf.py](source/conf.py). [Documentation verification](documentation_verification.md) records inventory, AST/syntax checks, corrected claims and pre-existing issues. Python modules use Google-style docstrings; the site remains a manually maintained branch guide, so update its examples when filenames or interfaces change.

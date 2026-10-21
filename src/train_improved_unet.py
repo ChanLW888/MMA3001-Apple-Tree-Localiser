@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
-"""
-Train an improved ResNet-34 U-Net for binary Y-shaped apple-tree branch segmentation.
-Paper-derived architecture:
-*\\-* U-Net encoder-decoder with ResNet-34 encoder and skip connections.
-*\\-* RGB-D input and one-channel binary mask output.
-*\\-* Original paper: TensorFlow, Adam, weighted Dice loss, batch size 8.
-This PyTorch adaptation keeps the requested simple BCE loss, Adam optimizer,
-batch size 8, and 4 input channels (RGB + grayscale depth).
-Preprocessing follows the paper's stated geometry:
-640x480 RGB/depth -> centre crop to 480x480 -> resize to 256x256.
-IMPORTANT: only use this if your GT mask corresponds to that centred crop.
+"""Train branch segmentation with ASPP, attention and residual decoding.
+
+Preprocessing matches train_unet.py: float32 [B, 4, S, S] RGB-D to [B, 1, S, S] logits.
+Uses plain BCE, AdamW (weight decay 1e-4), a validation-Dice plateau scheduler and
+paired flips. RGB brightness/contrast perturbation operates after normalisation, leaving
+depth unchanged. Architecture intent does not establish improved measured accuracy.
+
+Example:
+    python src/train_improved_unet.py --data-root data/Organised --no-pretrained
 """
 import argparse
 import copy
@@ -39,10 +37,20 @@ PATTERNS = {
 
 
 def seed_everything(seed):
-    """Set Python, NumPy, and PyTorch random seeds for reproducible runs.
+    """Seed Python, NumPy and PyTorch generators.
+
+    CUDA generators are seeded when available. Seeding does not guarantee deterministic
+    GPU kernels.
 
     Args:
-        seed: Integer seed shared across supported random-number generators."""
+        seed: int; nonnegative NumPy-compatible random seed.
+
+    Returns:
+        None.
+
+    Raises:
+        ValueError: If NumPy rejects the seed.
+    """
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -51,26 +59,34 @@ def seed_everything(seed):
 
 
 def get_key(path, modality):
-    """Build a modality-independent identifier from an image filename.
+    """Build a modality-independent filename identifier.
 
     Args:
-        path: Path to an RGB, depth, or ground-truth image.
-        modality: Image modality key used to select the filename pattern.
+        path: pathlib.Path to an image; stem retains tree, season and time.
+        modality: str; one of "rgb", "depth", or "gt".
 
     Returns:
-        Filename stem with the modality token replaced by ``_TIME-``."""
+        str: Stem with the first modality token replaced by "_TIME-".
+
+    Raises:
+        KeyError: If modality is unsupported.
+    """
     return PATTERNS[modality].sub("_TIME-", path.stem, count=1)
 
 
 def list_modality(root, modality):
-    """Find summer PNG files belonging to one dataset modality.
+    """Find summer PNGs for one modality recursively.
 
     Args:
-        root: Directory recursively searched for images.
-        modality: One of ``rgb``, ``depth``, or ``gt``.
+        root: pathlib.Path to the dataset directory.
+        modality: str; "rgb", "depth", or "gt".
 
     Returns:
-        Sorted paths matching the requested modality."""
+        list[pathlib.Path]: Sorted matching paths with summer in the stem.
+
+    Raises:
+        KeyError: If modality is unsupported.
+    """
     pattern = PATTERNS[modality]
     return sorted(
         p for p in root.rglob("*.png")
@@ -79,17 +95,19 @@ def list_modality(root, modality):
 
 
 def map_unique(paths, modality):
-    """Index image paths by their shared sample identifier.
+    """Index paths while rejecting ambiguous sample identifiers.
 
     Args:
-        paths: Paths belonging to one modality.
-        modality: Modality name used to normalize each filename.
+        paths: list[pathlib.Path] for one modality.
+        modality: str; "rgb", "depth", or "gt".
 
     Returns:
-        Mapping from sample identifier to image path.
+        dict[str, pathlib.Path]: Identifiers mapped to unique files.
 
     Raises:
-        RuntimeError: If multiple files share the same identifier."""
+        RuntimeError: If paths produce duplicate identifiers.
+        KeyError: If modality is unsupported.
+    """
     result = {}
     for path in paths:
         key = get_key(path, modality)
@@ -102,17 +120,22 @@ def map_unique(paths, modality):
 
 
 def build_samples(root):
-    """Pair RGB, depth, and ground-truth files into complete samples.
+    """Pair complete summer RGB, depth and branch-GT triplets.
+
+    Incomplete triplets are omitted. Filename agreement does not verify spatial
+    alignment.
 
     Args:
-        root: Dataset directory containing modality-specific PNG files.
+        root: pathlib.Path; existing organised dataset root.
 
     Returns:
-        Samples sorted by their shared identifier.
+        list[dict]: Sorted records with key, rgb, depth and gt entries; paths are
+            pathlib.Path objects.
 
     Raises:
-        FileNotFoundError: If the dataset root does not exist.
-        RuntimeError: If no complete triplets are found or identifiers repeat."""
+        FileNotFoundError: If root does not exist.
+        RuntimeError: If identifiers repeat or no complete triplets exist.
+    """
     if not root.exists():
         raise FileNotFoundError(f"Dataset root does not exist: {root}")
     rgb_map = map_unique(list_modality(root, "rgb"), "rgb")
@@ -134,13 +157,14 @@ def build_samples(root):
 
 
 def centre_crop_square(img):
-    """Centre-crop an image to its largest inscribed square.
+    """Crop to the largest centred square without resampling.
 
     Args:
-        img: PIL image to crop.
+        img: PIL.Image.Image in any mode.
 
     Returns:
-        Cropped PIL image with equal width and height."""
+        PIL.Image.Image: Square crop of side min(width, height).
+    """
     width, height = img.size
     side = min(width, height)
     left = (width - side) // 2
@@ -150,28 +174,54 @@ def centre_crop_square(img):
 
     """Load paired RGB-D images and binary branch masks."""
 class BranchDataset(Dataset):
+    """Load aligned RGB-D inputs and binary branch targets.
+
+    RGB and depth are centre-cropped and resized. GT is neither cropped nor resized; it
+    must already describe that field of view at input_size. Channel order is R, G, B,
+    then grayscale depth. Depth is image intensity, not calibrated metres.
+    """
     def __init__(self, samples, input_size=256, mask_threshold=127):
+        """Store paired samples and preprocessing settings.
+
+        Args:
+            samples: list[dict] from build_samples; rgb, depth, gt and key entries.
+            input_size: int; positive square side in pixels, default 256.
+            mask_threshold: int; grayscale cutoff, normally [0, 255]; GT > cutoff is
+                branch.
+
+        Returns:
+            None.
+        """
         self.samples = samples
         self.input_size = input_size
         self.mask_threshold = mask_threshold
     def __len__(self):
-        """Return the number of paired samples in the dataset.
+        """Return the number of complete samples.
 
         Returns:
-            Number of RGB-depth-mask triplets."""
+            int: Number of stored records.
+        """
         return len(self.samples)
     def __getitem__(self, index):
-        """Load and preprocess one RGB-D image and its binary branch mask.
+        """Read and preprocess one RGB-D and branch-GT sample.
+
+        RGB is bilinearly resized, /255 then ImageNet standardised. Depth is converted
+        to L, nearest-neighbour resized and /255. Targets use GT > mask_threshold; 1
+        denotes branch and 0 background.
 
         Args:
-            index: Index of the sample to load.
+            index: int; Python list index into samples.
 
         Returns:
-            A tuple containing the four-channel input tensor, one-channel target
-            tensor, and shared sample identifier.
+            tuple[torch.Tensor, torch.Tensor, str]: Float32 input [4, S, S], binary
+                float32 target [1, S, S], and identifier; S is input_size.
 
         Raises:
-            RuntimeError: If the ground-truth mask dimensions are unexpected."""
+            IndexError: If index is outside samples.
+            KeyError: If a sample lacks a required entry.
+            OSError: If an input cannot be opened or decoded.
+            RuntimeError: If GT size differs from input_size.
+        """
         sample = self.samples[index]
         size = (self.input_size, self.input_size)
         rgb_img = centre_crop_square(Image.open(sample["rgb"]).convert("RGB"))
@@ -184,8 +234,7 @@ class BranchDataset(Dataset):
         depth_img = centre_crop_square(Image.open(sample["depth"]).convert("L"))
         depth_img = depth_img.resize(size, Image.Resampling.NEAREST)
         depth = np.asarray(depth_img, dtype=np.float32) / 255.0
-        # Exactly four input channels: RGB + one greyscale depth channel.
-        # Concatenate RGB and depth as channels: [4, height, width].
+        # Preserve the checkpoint channel contract: normalised RGB, then depth/255.
         x = np.concatenate([rgb.transpose(2, 0, 1), depth[None]], axis=0)
         gt_img = Image.open(sample["gt"]).convert("L")
         if gt_img.size != size:
@@ -201,7 +250,19 @@ class BranchDataset(Dataset):
 
     """Apply convolution, batch normalisation, and ReLU activation."""
 class ConvNormAct(nn.Module):
+    """Extract features with convolution, batch normalisation and ReLU."""
     def __init__(self, in_ch, out_ch, kernel_size=3, dilation=1):
+        """Build a padded feature convolution.
+
+        Args:
+            in_ch: int; positive input channels.
+            out_ch: int; positive output channels.
+            kernel_size: int; positive kernel side, normally odd.
+            dilation: int; positive dilation rate.
+
+        Returns:
+            None.
+        """
         super().__init__()
         padding = dilation * (kernel_size // 2)
         self.block = nn.Sequential(
@@ -210,19 +271,36 @@ class ConvNormAct(nn.Module):
             nn.ReLU(inplace=True),
         )
     def forward(self, x):
-        """Run the input through the network and return a one-channel logit map.
+        """Transform a batch of features.
 
         Args:
-            x: Input tensor shaped ``[batch, channels, height, width]``.
+            x: torch.Tensor; [B, input_channels, H, W].
 
         Returns:
-            Raw branch-segmentation logits shaped ``[batch, 1, height, width]``."""
+            torch.Tensor: [B, output_channels, H, W] features for odd kernels; not
+                branch logits.
+
+        Raises:
+            RuntimeError: If channels, batch-normalisation input or device is
+                incompatible.
+        """
         return self.block(x)
 
 
     """Fuse decoder and skip features with a residual block."""
 class ResidualDecoderBlock(nn.Module):
+    """Fuse resized decoder and skip features through a residual path."""
     def __init__(self, in_ch, skip_ch, out_ch):
+        """Construct convolutions and a channel-matching shortcut.
+
+        Args:
+            in_ch: int; positive decoder channels.
+            skip_ch: int; skip channels, or 0 when no skip will be provided.
+            out_ch: int; positive output channels.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self.conv1 = ConvNormAct(in_ch + skip_ch, out_ch)
         self.conv2 = nn.Sequential(
@@ -235,43 +313,81 @@ class ResidualDecoderBlock(nn.Module):
         )
         self.relu = nn.ReLU(inplace=True)
     def forward(self, x, skip=None):
-        """Run the input through the network and return a one-channel logit map.
+        """Resize to the skip grid, concatenate and add a residual projection.
 
         Args:
-            x: Input tensor shaped ``[batch, channels, height, width]``.
+            x: torch.Tensor; [B, decoder_channels, H, W].
+            skip: torch.Tensor or None; [B, skip_channels, Hs, Ws] encoder features.
 
         Returns:
-            Raw branch-segmentation logits shaped ``[batch, 1, height, width]``."""
+            torch.Tensor: [B, output_channels, Hs, Ws] with skip; otherwise retains
+                input grid.
+
+        Raises:
+            RuntimeError: If concatenated channels or devices are incompatible.
+        """
         if skip is not None:
             x = F.interpolate(x, size=skip.shape[-2:], mode="bilinear", align_corners=False)
             x = torch.cat([x, skip], dim=1)
+        # Projection makes concatenated skip/context channels compatible with addition.
         residual = self.shortcut(x)
         return self.relu(self.conv2(self.conv1(x)) + residual)
 
 
     """Weight skip features according to decoder context."""
 class AttentionGate(nn.Module):
+    """Weight encoder skip features using decoder context."""
     def __init__(self, gate_ch, skip_ch, inter_ch):
+        """Construct context projections and scalar spatial attention.
+
+        Args:
+            gate_ch: int; positive context channels.
+            skip_ch: int; positive encoder channels.
+            inter_ch: int; positive intermediate channels.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self.gate = nn.Sequential(nn.Conv2d(gate_ch, inter_ch, 1, bias=False), nn.BatchNorm2d(inter_ch))
         self.skip = nn.Sequential(nn.Conv2d(skip_ch, inter_ch, 1, bias=False), nn.BatchNorm2d(inter_ch))
         self.score = nn.Sequential(nn.ReLU(inplace=True), nn.Conv2d(inter_ch, 1, 1), nn.Sigmoid())
     def forward(self, gate, skip):
-        """Run the input through the network and return a one-channel logit map.
+        """Apply sigmoid attention while retaining the skip shape.
 
         Args:
-            x: Input tensor shaped ``[batch, channels, height, width]``.
+            gate: torch.Tensor; [B, gate_channels, Hg, Wg] context.
+            skip: torch.Tensor; [B, skip_channels, Hs, Ws] encoder features.
 
         Returns:
-            Raw branch-segmentation logits shaped ``[batch, 1, height, width]``."""
+            torch.Tensor: Weighted skip [B, skip_channels, Hs, Ws], not a
+                one-channel prediction.
+
+        Raises:
+            RuntimeError: If channels, batch dimensions or devices are incompatible.
+        """
         gate = F.interpolate(gate, size=skip.shape[-2:], mode="bilinear", align_corners=False)
         alpha = self.score(self.gate(gate) + self.skip(skip))
         return skip * alpha
 
 
 class ASPP(nn.Module):
-    """Multi-scale context block at the deepest encoder stage."""
+    """Combine parallel convolutions at dilation rates 1, 2, 4 and 6.
+
+    The rate-1 branch uses a 1x1 kernel. Projection fuses concatenated features; dropout
+    is active only in training mode.
+    """
     def __init__(self, in_ch, out_ch):
+        """Construct four branches and a context projection.
+
+        Args:
+            in_ch: int; positive input channels.
+            out_ch: int; output channels, at least 4; branch width is
+                floor(output_channels/4).
+
+        Returns:
+            None.
+        """
         super().__init__()
         branch_ch = out_ch // 4
         self.branches = nn.ModuleList([
@@ -287,19 +403,45 @@ class ASPP(nn.Module):
             nn.Dropout2d(0.10),
         )
     def forward(self, x):
-        """Run the input through the network and return a one-channel logit map.
+        """Fuse multiscale features without changing the spatial grid.
 
         Args:
-            x: Input tensor shaped ``[batch, channels, height, width]``.
+            x: torch.Tensor; [B, input_channels, H, W].
 
         Returns:
-            Raw branch-segmentation logits shaped ``[batch, 1, height, width]``."""
+            torch.Tensor: [B, output_channels, H, W] context features, not branch
+                logits.
+
+        Raises:
+            RuntimeError: If convolution or batch-normalisation input is
+                incompatible.
+        """
         return self.project(torch.cat([branch(x) for branch in self.branches], dim=1))
 
 
 class ImprovedResNet34UNet(nn.Module):
-    """ResNet-34 U-Net with ASPP context, attention skips and residual decoder blocks."""
+    """Predict branch logits with a four-channel ResNet-34 U-Net.
+
+    ASPP supplies multiscale context, attention weights skip features, and residual
+    blocks fuse them. With pretraining, RGB filters are retained and their mean
+    initialises depth.
+    """
     def __init__(self, in_channels=4, pretrained=True):
+        """Construct encoder and decoder layers.
+
+        Args:
+            in_channels: int; intended value 4; pretrained initialisation assumes
+                RGB-D.
+            pretrained: bool; request default torchvision ResNet-34 weights when
+                True.
+
+        Returns:
+            None.
+
+        Raises:
+            OSError: If pretrained weights cannot be read or retrieved.
+            RuntimeError: If layer dimensions or weights are incompatible.
+        """
         super().__init__()
         weights = ResNet34_Weights.DEFAULT if pretrained else None
         backbone = resnet34(weights=weights)
@@ -336,13 +478,19 @@ class ImprovedResNet34UNet(nn.Module):
         )
         self.out = nn.Conv2d(32, 1, kernel_size=1)
     def forward(self, x):
-        """Run the input through the network and return a one-channel logit map.
+        """Decode RGB-D features into full-resolution branch logits.
 
         Args:
-            x: Input tensor shaped ``[batch, channels, height, width]``.
+            x: torch.Tensor; floating [B, 4, H, W] batch using training
+                preprocessing.
 
         Returns:
-            Raw branch-segmentation logits shaped ``[batch, 1, height, width]``."""
+            torch.Tensor: Raw [B, 1, H, W] logits; sigmoid converts to
+                probabilities.
+
+        Raises:
+            RuntimeError: If channels, spatial size or dtype/device is incompatible.
+        """
         input_size = x.shape[-2:]
         s0 = self.stem(x)
         e1 = self.enc1(self.maxpool(s0))
@@ -364,14 +512,21 @@ class ImprovedResNet34UNet(nn.Module):
 
 
 def bce_loss(logits, targets):
-    """Calculate binary cross-entropy directly from logits.
+    """Compute binary cross-entropy directly from branch logits.
+
+    Uses plain unweighted BCE; sigmoid is internal to the numerically stable loss.
 
     Args:
-        logits: Unnormalised model predictions.
-        targets: Binary ground-truth masks with matching dimensions.
+        logits: torch.Tensor; floating [B, 1, H, W] raw scores.
+        targets: torch.Tensor; same shape/device, floating labels in {0, 1}.
 
     Returns:
-        Scalar binary cross-entropy loss."""
+        torch.Tensor: Scalar mean loss.
+
+    Raises:
+        ValueError: If target and logit sizes differ.
+        RuntimeError: If tensor types or devices are incompatible.
+    """
     return F.binary_cross_entropy_with_logits(logits, targets)
 
 
@@ -379,16 +534,25 @@ def bce_loss(logits, targets):
 
 
 def evaluate(model, loader, device, threshold):
-    """Evaluate segmentation loss and thresholded pixel-level metrics.
+    """Aggregate validation loss and foreground pixel metrics.
+
+    Sets evaluation mode and disables gradients. Uses sigmoid(logits) >= threshold and
+    targets >=0.5. Epsilon 1e-8 stabilises ratios; empty foreground scores zero.
 
     Args:
-        model: Trained segmentation model.
-        loader: DataLoader providing inputs and target masks.
-        device: Device on which inference is performed.
-        threshold: Probability threshold used to classify branch pixels.
+        model: torch.nn.Module mapping [B, 4, H, W] to [B, 1, H, W] logits.
+        loader: DataLoader yielding input, target and identifier batches.
+        device: torch.device; model must already be on it.
+        threshold: float; inclusive sigmoid cutoff, normally [0, 1].
 
     Returns:
-        Dictionary containing loss, Dice, IoU, precision, and recall."""
+        dict[str, float]: Sample-weighted loss and pixel-micro dice, iou, precision
+            and recall.
+
+    Raises:
+        OSError: If dataset inputs cannot be read.
+        RuntimeError: If dataset geometry or model execution fails.
+    """
     model.eval()
     total_loss = 0.0
     tp = fp = fn = 0
@@ -412,15 +576,26 @@ def evaluate(model, loader, device, threshold):
 
 
 def save_visualisations(model, dataset, device, output_dir, count, threshold):
-    """Save RGB, depth, target, prediction, and overlay comparison panels.
+    """Save validation RGB, depth, GT, prediction and overlay panels.
+
+    Reverses RGB normalisation for display. Yellow marks overlap, green missed GT
+    branches, and red false foreground. Sets evaluation mode.
 
     Args:
-        model: Model used to generate predictions.
-        dataset: Dataset to visualise.
-        device: Device used for inference.
-        output_dir: Destination directory for comparison images.
-        count: Maximum number of samples to visualise.
-        threshold: Probability threshold used to binarise predictions."""
+        model: torch.nn.Module producing branch logits.
+        dataset: Dataset yielding ([4, H, W], [1, H, W], key).
+        device: torch.device matching model parameters.
+        output_dir: pathlib.Path; destination created if needed.
+        count: int; nonnegative maximum initial samples to render.
+        threshold: float in [0, 1]; inclusive sigmoid cutoff.
+
+    Returns:
+        None.
+
+    Raises:
+        OSError: If image reading or figure writing fails.
+        RuntimeError: If geometry or model execution fails.
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
     mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
     std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
@@ -457,7 +632,22 @@ def save_visualisations(model, dataset, device, output_dir, count, threshold):
 
 
 def main():
-    """Parse command-line arguments and run model training and validation."""
+    """Train, select by validation Dice and export checkpoint and metrics.
+
+    Uses a seeded shuffled sample split, not a held-out tree split. Writes history.csv,
+    val_metrics.csv and visualisations. Checkpoint selection uses the same validation
+    set. Use positive epochs and validation fraction strictly between 0 and 1.
+
+    Returns:
+        None.
+
+    Raises:
+        SystemExit: If CLI parsing fails or --help is requested.
+        FileNotFoundError: If dataset root is absent.
+        RuntimeError: If pairing, split or model execution fails.
+        OSError: If reading inputs or writing outputs fails.
+        IndexError: If zero epochs leave history empty at CSV export.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-root", type=Path, required=True)
     parser.add_argument(
@@ -523,7 +713,7 @@ def main():
                     x, y = torch.flip(x, dims=[3]), torch.flip(y, dims=[3])
                 if torch.rand((), device=device) < 0.20:
                     x, y = torch.flip(x, dims=[2]), torch.flip(y, dims=[2])
-                # Mild RGB brightness/contrast jitter; depth channel is left unchanged.
+                # Perturb already-standardised RGB; encoded depth values stay unchanged.
                 rgb = x[:, :3]
                 contrast = 0.90 + 0.20 * torch.rand((x.size(0), 1, 1, 1), device=device)
                 brightness = -0.08 + 0.16 * torch.rand((x.size(0), 1, 1, 1), device=device)

@@ -1,50 +1,26 @@
 # Data and preprocessing
 
-## Dataset pairing
+## Pairing
 
-The branch-segmentation scripts pair RGB, depth, and ground-truth mask files
-using identifiers derived from their filenames. A sample is used for training
-when all three modalities are available for the same identifier.
+Branch trainers recursively locate lowercase-extension `*.png` files with summer in the stem. `_RGB-`, `_D-` and `_GT-` are replaced by a common token to pair each tree/season/time identifier. Duplicate keys raise errors; incomplete triplets are omitted. Filename agreement alone does not verify spatial registration.
 
-Filename matching does not independently prove that images are spatially
-aligned. Confirm that RGB, depth, and mask refer to the same scene and framing.
+The organised layout is `data/Organised/<Summer|Winter>/<RGB|D|GT>/`. Winter inference pairs winter RGB/depth without GT. There is no independently audited dataset count in this documentation update; earlier exact counts and image dimensions have been removed as unverified historical observations. See the maintained data README for COCO preparation and apple inputs.
 
-## Known dataset organisation
+## Tensor contract
 
-The dataset check previously reported:
+1. Convert RGB to RGB mode and depth to L-mode grayscale.
+2. Centre-crop each to its largest square. A 640x480 frame would yield a central 480x480 crop; this is a geometric example, not a verified inventory.
+3. Resize to input_size (default 256): bilinear RGB, nearest-neighbour depth.
+4. Divide RGB by 255, then use means `[0.485, 0.456, 0.406]` and standard deviations `[0.229, 0.224, 0.225]`. The MLP uses the same scaling as the U-Nets.
+5. Divide grayscale depth by 255 and concatenate after RGB: float32 `[4, S, S]` per sample or `[B, 4, S, S]` per batch.
+6. Convert GT to L mode without cropping/resizing; require dimensions `(S, S)`. Set target=1 where GT >mask_threshold (127 by default), otherwise 0. Target is float32 `[1, S, S]`.
 
-| Season | RGB | Depth | Ground-truth masks | Total files |
-|---|---:|---:|---:|---:|
-| Summer | 562 | 562 | 562 | 1,686 |
-| Winter | 562 | 562 | 0 | 1,124 |
-| **Total** | **1,124** | **1,124** | **562** | **2,810** |
+ImageNet normalisation aligns RGB scaling with the pretrained encoder; depth remains a separate intensity feature. Nearest-neighbour depth interpolation avoids creating intermediate encoded values. L conversion is not metric depth calibration and can discard precision from richer source depth encodings.
 
-The branch-mask training workflow therefore uses the summer samples with
-ground-truth masks. Winter images can be used for qualitative inference, but
-without winter ground-truth masks they cannot provide quantitative winter
-segmentation metrics.
+GT must already describe the same centred field of view, not merely share dimensions. This assumption is not proven by script checks. A mismatch in GT size raises RuntimeError; a wrong field of view can pass size validation. Model inference must preserve training channel order, geometry and scaling.
 
-## Image dimensions
+## Apple mask distinctions
 
-The dataset check reported RGB and depth images at 640 × 480 pixels and
-ground-truth masks at 256 × 256 pixels.
+Traditional apple detection retains original RGB/depth grids and requires equal spatial dimensions. Depth >0 means valid; GT is full-frame nearest-neighbour resized, with foreground >0. RF-DETR does not use depth; its GT foreground cutoff is >127, default alignment centres a square mask in the original frame, and predicted mode only reads external masks. Both dilate branch regions using a diameter-100 ellipse by default; differing alignment/cutoffs still create different regions.
 
-The documented preprocessing for the branch-training scripts is:
-
-1. Centre-crop RGB and depth to a square (480 × 480 for 640 × 480 images).
-2. Resize RGB to the model input size using bilinear interpolation.
-3. Resize depth using nearest-neighbour interpolation.
-4. Normalise RGB using ImageNet mean and standard deviation for ResNet-based
-   models; scale the grayscale depth channel to [0, 1].
-5. Threshold the ground-truth mask to produce a binary target.
-
-The scripts expect the ground-truth mask to match the configured model input
-size. Verify that the mask represents the same centred field of view before
-training; do not silently resize or crop masks without confirming alignment.
-
-## Depth interpretation
-
-The depth files are stored as 8-bit image data in the checked dataset. The
-physical meaning and metric calibration of these pixel values are not
-established by the file format alone. They should be described as a grayscale
-depth channel unless the encoding has been independently verified.
+Branch GT is not apple-instance annotation. COCO files may contain apple annotations, but authorship, frame correspondence and train/evaluation separation require verification. RF-DETR detections used for comparison are pseudo-ground truth and do not establish real accuracy.

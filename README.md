@@ -1,325 +1,199 @@
-# Apple Localisation for MMA3001 Project
+# Apple localisation for MMA3001
 
-A computer vision pipeline for detecting and localising apples in the TreeID dataset using RGB images, depth maps, and tree/branch ground-truth information.
+This Numerical Methods and Machine Learning project investigates RGB-D tree-branch segmentation and 2D apple localisation in orchard images. It compares a pixel MLP, a basic ResNet-34 U-Net and an extended U-Net for branch segmentation, alongside a traditional red-component detector and RF-DETR apple instance segmentation.
 
-This project is part of the **MMA3001 project** and focuses on identifying apple candidates in orchard images and producing annotated images and apple-count results.
+The engineering objective is reproducible image-space apple candidates and branch predictions that could support later 3D reconstruction. **The current traditional apple detector uses ground-truth branch masks. RF-DETR also defaults to branch GT.** The scripts do not automatically connect trained branch networks to apple detection. Depth is a validity filter in traditional detection, not a calibrated source of 3D apple coordinates. RF-DETR detection does not read depth.
 
-## Project Overview
+## Repository map
 
-The goal of this project is to automatically identify apples from images of apple trees.
+| Location | Maintained content |
+|---|---|
+| [src/README.md](src/README.md) | Preparation, branch training, apple detection and comparison scripts |
+| [test/test_apple_evaluation.py](test/test_apple_evaluation.py) | Synthetic matching tests and data-dependent regression checks |
+| [test/winter_inference.py](test/winter_inference.py) | Qualitative branch predictions and forward-pass timing with three checkpoints |
+| [data/README.md](data/README.md) | Orchard PNG naming, organised layout and COCO split requirements |
+| [outputs/README.md](outputs/README.md) | Output directories, CSV conventions and interpretation |
+| [docs/README.md](docs/README.md) | Static Sphinx branch-segmentation guide and HTML build instructions |
 
-The current detection pipeline combines:
+Datasets, checkpoints, generated results, caches and HTML builds are excluded from source control. The folder READMEs are maintained documentation, not generated outputs.
 
-* **RGB images** to identify red apple-like regions
-* **Depth maps** to remove pixels without valid depth
-* **Ground-truth tree/branch masks** to restrict detections to regions close to the tree structure
-* **Shape filtering** to reject regions that are unlikely to be apples
+## Environment and hardware
 
-The current method is primarily a **2D image-based detection approach**. Although depth is loaded, the actual depth values are currently only used as a validity mask (`depth > 0`) rather than being used to estimate the 3D position of each apple.
+Python and Conda are used in the project workflow. The existing environment name used by current comparison/reproduction examples is `treeid`; it is a local environment name, not a supplied environment specification. No runtime requirements lockfile or Conda environment YAML is provided, so an exact original software environment cannot be reconstructed from this checkout alone. No minimum RAM, VRAM, GPU model or validated Python/package versions are specified.
 
-## Detection Pipeline
+With a previously provisioned environment:
 
-The detection process is:
-
-```text
-RGB Image
-    │
-    ├── Red colour detection
-    │
-    ├── Depth validity check
-    │
-    ▼
-Red Mask
-    │
-    ├── Morphological filtering
-    │
-    ▼
-Connected Components
-    │
-    ├── Area filtering
-    ├── Aspect ratio filtering
-    ├── Circularity filtering
-    ├── Branch-region overlap
-    └── Red colour score
-    │
-    ▼
-Apple Candidates
-    │
-    ├── Bounding boxes
-    ├── Centre points
-    └── Apple count
-    │
-    ▼
-Annotated RGB Images + CSV
+```powershell
+conda activate treeid
+python --version
+conda list
 ```
 
-## Apple Detection
+If that environment is absent, provision a compatible environment separately using your institution's software guidance. The dependencies below are derived from imports; they are not a tested installation recipe:
 
-Red regions are identified using the RGB channels.
+| Workflow | External packages |
+|---|---|
+| Traditional detector | NumPy, OpenCV (`cv2`), Pillow (`PIL`) |
+| Detector comparison and synthetic tests | Above, plus SciPy and Matplotlib |
+| Branch MLP training | NumPy, Pillow, Matplotlib, PyTorch |
+| Branch U-Nets and winter inference | Above, plus torchvision |
+| RF-DETR training/inference | `rfdetr`; inference also imports PyTorch, OpenCV and NumPy |
+| Documentation build | Sphinx and MyST Parser, declared in [docs/requirements-docs.txt](docs/requirements-docs.txt) |
 
-A pixel is considered part of the initial red mask when:
+Branch scripts choose CUDA when available, otherwise CPU. RF-DETR device behaviour is delegated to its library. CUDA requires a compatible PyTorch build and driver; CPU speed and memory suitability are not benchmarked here. Default U-Net pretraining and RF-DETR initialisation may retrieve weights if not cached. For offline runs, provide the required cached weights, or use the U-Net `--no-pretrained` option where appropriate. No installation, download, training or inference was performed during this documentation update.
 
-```text
-R > RED_THRESHOLD
-R > G × RED_DOMINANCE
-R > B × RED_DOMINANCE
-depth > 0
-```
+## Dataset inputs
 
-The resulting mask is cleaned using morphological opening and closing before connected components are extracted.
-
-Each connected component is then filtered using:
-
-| Filter         | Purpose                                              |
-| -------------- | ---------------------------------------------------- |
-| Area           | Removes regions that are too small or too large      |
-| Aspect ratio   | Rejects elongated regions                            |
-| Circularity    | Favors roughly circular apple-shaped regions         |
-| Branch overlap | Removes red regions far from the tree                |
-| Red score      | Measures how strongly the region is dominated by red |
-
-## Dataset Structure
-
-The dataset is expected to be organised as:
+Run commands from the repository root. Input data must be obtained separately; this repository does not establish its redistribution rights or calibrated depth units.
 
 ```text
 data/
-└── Organised/
-    └── Summer/
-        ├── RGB/
-        │   ├── R10N12_Summer_RGB-13-36-51.png
-        │   └── ...
-        │
-        ├── D/
-        │   ├── R10N12_Summer_D-13-36-51.png
-        │   └── ...
-        │
-        └── GT/
-            ├── R10N12_Summer_GT-13-36-51.png
-            └── ...
+  Dataset (With Summer GT)/          # flat organiser input
+  Organised/
+    Summer/
+      RGB/<tree>_Summer_RGB-<time>.png
+      D/<tree>_Summer_D-<time>.png
+      GT/<tree>_Summer_GT-<time>.png
+    Winter/
+      RGB/<tree>_Winter_RGB-<time>.png
+      D/<tree>_Winter_D-<time>.png
+      GT/                           # may be empty
+  apple tree.v1i.coco-segmentation/
+    train/_annotations.coco.json    # images alongside JSON
+    export/_annotations.coco.json
+  apple_tree_clean/
+    train/_annotations.coco.json
+    valid/_annotations.coco.json
 ```
 
-The RGB, depth and GT files are matched using:
+For example, `R10N12_Summer_RGB-13-36-51.png`, `R10N12_Summer_D-13-36-51.png` and `R10N12_Summer_GT-13-36-51.png` identify one frame. Apple scripts require the `R<digits>N<digits>` tree convention; the organiser accepts a broader tree token. Matching filenames do not prove spatial alignment.
 
-* Tree ID
-* Season
-* Timestamp
+Branch training centre-crops RGB/depth to a square and resizes to 256 pixels by default. RGB uses ImageNet mean/std after division by 255; depth is converted to 8-bit grayscale and divided by 255. Inputs are float32 `[B, 4, H, W]`, targets `[B, 1, H, W]` with branch=1 for GT >127. GT is not resized and must already match the input grid and centred field of view. The depth channel is not measured in established physical units. See [data and preprocessing](docs/source/data_and_preprocessing.md).
 
-For example:
+To organise flat orchard files (copies files and may overwrite destinations):
 
-```text
-R10N12_Summer_RGB-13-36-51.png
-R10N12_Summer_D-13-36-51.png
-R10N12_Summer_GT-13-36-51.png
+```powershell
+python src/dataset_organiser.py
 ```
 
-represent the same frame.
+The organiser uses Windows-style relative paths and runs filesystem operations even if imported. RF-DETR COCO preparation is a separate workflow:
 
-## Repository Structure
-
-```text
-Git_repo_location/
-│
-├── data/
-│   └── Organised/
-│       └── ...
-│
-├── src/
-│   └── apple_predictor_v1.py
-│
-├── outputs/
-│   └── apple_detection/
-│       ├── annotated/
-│       └── apple_counts.csv
-│
-├── .gitignore
-└── README.md
+```powershell
+python src/preprocess_roboflow_dataset.py
 ```
 
-> The dataset and generated outputs are excluded from Git using `.gitignore` because of their size.
+It merges category names beginning with `apple-` into class ID 1, retains negative images, maps `export` to `valid`, and preserves separate apple instances. Missing image copies leave COCO records behind, so inspect warnings before training. The presence of COCO files does not establish independently verified orchard evaluation annotations.
 
-## Requirements
+## Branch segmentation
 
-The project uses Python and the following packages:
+The following commands train models; they are reproduction instructions, not actions executed for this documentation task:
 
-* Python
-* NumPy
-* OpenCV
-* Pillow
-
-Install the dependencies with:
-
-```bash
-pip install numpy opencv-python pillow
+```powershell
+python src/train_baseline.py --data-root data/Organised
+python src/train_unet.py --data-root data/Organised
+python src/train_improved_unet.py --data-root data/Organised
 ```
 
-If using the existing Conda environment:
+Each accepts `--help`, `--output-dir`, `--input-size`, `--epochs`, `--batch-size`, `--seed`, `--val-fraction`, `--threshold` and other script-specific options. Use `--no-pretrained` for U-Nets when ImageNet initialisation is not desired. The MLP uses weighted BCE (positive weight 12) and Adam. Basic U-Net uses plain BCE and Adam. The extended U-Net adds ASPP, attention gates, residual decoding, paired flips and normalised-RGB jitter; it uses plain BCE, AdamW and a validation-Dice plateau scheduler.
 
-```bash
-conda activate tree3d
+All select the best checkpoint by validation Dice on a seeded shuffled summer sample split (20% validation by default). This is model-selection validation, not an independent test or a guaranteed held-out-tree split. Seeded shuffling does not guarantee bitwise deterministic CUDA execution.
+
+For winter inference with checkpoints produced by the commands above:
+
+```powershell
+python test/winter_inference.py --data-root data/Organised --mlp-checkpoint outputs/pixel_mlp_crop_trainval/pixel_mlp_best.pth --unet-checkpoint outputs/resnet34_unet_crop_trainval_output/resnet34_unet_best.pth --improved-checkpoint outputs/improved_resnet34_unet_output/improved_resnet34_unet_best.pth
 ```
 
-## Running the Detector
+These are expected output paths, not bundled checkpoint files. Supply the actual checkpoint locations if earlier runs used other directories. Use only trusted checkpoints. Keep `--input-size` and `--threshold` consistent with training; input size is not automatically inferred from checkpoints. Winter inference needs RGB-D pairs, not GT, and produces qualitative masks and model-only timings rather than winter accuracy metrics.
 
-From the repository root:
+## Traditional apple detection
 
-```bash
+```powershell
 python src/apple_predictor_v1.py
 ```
 
-The script will search the configured dataset directory for matching RGB, depth and GT images.
+Configuration is through module constants, with summer defaults. Processing selects red-dominant pixels with depth >0, applies elliptical opening/closing, then filters connected components by area, aspect ratio, circularity and branch-zone overlap. Defaults include red >50, red dominance 1.5, area 30–5000 pixels, circularity >=0.20, aspect ratio <=2.5, morphology diameter 5, branch dilation diameter 100 and overlap >=0.05. The mean red score `R/(G+B+1)` is descriptive, not confidence and not an additional rejection threshold.
 
-The season can be changed in:
+Branch GT is converted to grayscale, stretched over the full RGB grid using nearest-neighbour interpolation, and interpreted as foreground >0. RGB and depth must have matching spatial dimensions. Unexpected names or missing companions are skipped with warnings. An empty/missing RGB folder returns without producing new results.
 
-```python
-SEASON = "Summer"
+## RF-DETR apple detection
+
+With a previously trained checkpoint at `outputs/rfdetr_apple_tree/checkpoint_best_total.pth`:
+
+```powershell
+python src/apple_segmenter_v1.py
 ```
 
-For example:
+The script loads `RFDETRSegMedium`, applies confidence >=0.20, instance mask >0.50, minimum area 1 pixel and branch overlap >=0.05. It assumes an apple-only checkpoint; there is no class-ID filter. Branch masks are thresholded >127 and, by default, expanded into the central square of the original image before dilation (diameter 100). This geometry differs from traditional detection. Largest-branch-component filtering is disabled by default.
 
-```python
-SEASON = "Winter"
+`BRANCH_SOURCE = "gt"` is the default. Optional `"predicted"` mode reads externally supplied `outputs/branch_predictions/<RGB-stem>_branch.png` masks encoded 0/255; 0/1 PNG values fail the >127 cutoff. Winter benchmark mask filenames/layout do not directly match this convention. No automatic conversion or branch-network call exists. Confirm field-of-view geometry before interpreting detections.
+
+RF-DETR training, when intentionally required, is separate:
+
+```powershell
+python src/apple_segmenter_train.py
 ```
 
-## Output
+It requires cleaned COCO train/valid data and requests 50 epochs at batch size 1. Importing this training module checks dataset paths and prints configuration. Avoid importing preparation/training scripts as passive libraries.
 
-Annotated images are saved under:
+## Compare saved detections
 
-```text
-outputs/apple_detection/annotated/
+```powershell
+python src/compare_apple_detectors.py --max-distance 30 --thresholds 10 20 30 40 50
 ```
 
-Each detected apple is marked with:
+Defaults read `apple_counts.csv` and `apple_instances.csv` from `outputs/apple_detection` and `outputs/apple_rfdetr_instances`, plus source summer RGB images. Options include `--traditional-dir`, `--reference-dir`, `--rgb-dir` and `--output-dir`. This command reads existing predictions; it does not run detectors.
 
-* A bounding box
-* A centre point
-* A detection number
+The comparison uses exact basename intersection, retaining zero-detection frames via counts CSVs. Inclusive pixel boxes use `(x1, y1, x2, y2)`; centroids are mean component/mask pixel coordinates with top-left origin, x right and y down. Hungarian assignment first maximises pairs within inclusive Euclidean tolerance, then minimises distance. IoU is descriptive and does not select matches. Signed count error is traditional minus RF-DETR.
 
-The image also displays the total number of detected apples.
+**RF-DETR predictions are pseudo-ground truth, not independently verified apple annotations.** Precision/recall/F1 describe reference agreement. Accepted centroid distances and box IoUs condition on matching. Shared GT dependence, different mask cutoffs/alignment, traditional depth filtering and correlated orchard frames prevent a controlled detector-only or generalisation claim. Matching sensitivity changes pairing tolerance on fixed predictions, not detector parameters.
 
-Example:
+## Expected outputs
 
-```text
-Apples: 4
+| Producer | Default location and files |
+|---|---|
+| MLP training | `outputs/pixel_mlp_crop_trainval/`: `pixel_mlp_best.pth`, `history.csv`, `val_metrics.csv`, `visualisations/` |
+| Basic U-Net training | `outputs/resnet34_unet_crop_trainval_output/`: `resnet34_unet_best.pth` and corresponding CSVs/visualisations |
+| Extended U-Net training | `outputs/improved_resnet34_unet_output/`: `improved_resnet34_unet_best.pth` and corresponding CSVs/visualisations |
+| Winter inference | `outputs/winter_inference_benchmark/`: per-model masks, overlays, comparisons; `per_image_timings.csv`, `summary.csv`, `benchmark_metadata.json` |
+| Traditional detector | `outputs/apple_detection/`: flat annotation PNGs, `apple_counts.csv`, `apple_instances.csv`, `image_timings.csv`, `run_metadata.json` |
+| RF-DETR inference | `outputs/apple_rfdetr_instances/`: `annotated/`, `masks/`, `branch_zones/`, counts/instances/timings CSVs |
+| Comparison | `outputs/apple_detector_comparison/`: metrics, matches, coverage, duplicates, sensitivity, plots/examples, `input_manifest.json`, `annotation_inventory.json`, `evaluation_report.md` |
+
+See [output schemas](outputs/README.md) for CSV meanings and timing boundaries. These paths describe current source defaults, which can differ from existing historical output folders. Existing generated files have not been rerun or verified here. Reusing output directories overwrites named files; partial RF-DETR runs recreate CSVs rather than append to them and may leave older PNGs.
+
+## Reproduction and verification
+
+1. Record your source revision, environment package versions, device, data provenance and checkpoint fingerprints.
+2. Check image triplets, GT field of view and COCO split independence. Keep evaluation human annotations separate from training if measuring real accuracy.
+3. Run preparation only when needed, then branch training and optional winter inference separately from apple detection.
+4. Use the configured local RF-DETR checkpoint and run each detector intentionally. Keep its input masks and source settings with the outputs.
+5. Compare saved CSVs and retain the input manifest. Current constants alone cannot prove how historical CSVs were produced.
+
+Local synthetic matching tests can be run from `test/` with the already provisioned dependencies:
+
+```powershell
+python -m unittest test_apple_evaluation.EvaluationTests.test_exact_threshold_and_one_to_one test_apple_evaluation.EvaluationTests.test_cardinality_before_distance test_apple_evaluation.EvaluationTests.test_empty_and_metrics test_apple_evaluation.EvaluationTests.test_exact_filenames_and_row_order test_apple_evaluation.EvaluationTests.test_duplicates_validation_counts_and_zero -v
 ```
 
-A CSV file containing the detection results is saved to:
+Full discovery from the repository root is available but is **not an inference-free test run**:
 
-```text
-outputs/apple_detection/apple_counts.csv
+```powershell
+python -m unittest discover -s test -p "test_apple*.py" -v
 ```
 
-The CSV contains:
+It includes all-frame detection against Git HEAD, saved-output checks and a currently inconsistent export fixture. That fixture patches nonexistent `CSV_PATH` instead of the actual export-path constants and omits required timing fields. The saved-output check expects historical `apple_rfdetr_boxes_only`, not the current default. These pre-existing issues were documented without code fixes. See [documentation verification](docs/documentation_verification.md) for static syntax/AST checks and their limits.
 
-```text
-Tree
-Season
-Time
-Apple_Count
-Annotated_Image
-```
+## HTML documentation
 
-## Console Output
+The existing Sphinx site covers branch segmentation; root/source/output READMEs cover apple workflows. See [build instructions](docs/README.md). After a local build, open `docs/_build/html/index.html`; HTML is generated and not included in Git. No HTML build was performed for this update.
 
-The detector provides a concise summary while processing:
+## Limitations and next steps
 
-```text
-Processing 562 frames...
+Colour filtering can miss non-red, shadowed or occluded apples, merge touching apples, and detect other red objects. RF-DETR can also miss, merge, split or hallucinate objects. Neither method establishes true apple counts without independently verified annotations. Branch GT dependence prevents a fully autonomous deployment claim; mask geometry requires independent confirmation. RGB-D channel scaling does not establish physical depth calibration or 3D localisation. Sample-level validation may include correlated frames and is used for checkpoint selection. No new performance, hardware measurements or experiments are claimed.
 
-R10N12
-  13-36-51 → 3 apples
-  13-37-02 → 4 apples
-  13-37-13 → 2 apples
+Future work could connect predicted branches through an explicit verified alignment/export stage, evaluate on held-out human apple annotations, and use calibrated depth or reconstructed geometry for 3D positions. These are objectives, not implemented capabilities.
 
-R10N13
-  13-38-01 → 1 apple
-  13-38-12 → 3 apples
+## References and acknowledgements
 
-Done.
-Frames processed: 562
-Average apples/frame: 2.47
-Results: outputs/apple_detection/apple_counts.csv
-```
-
-## Configuration
-
-The main detection parameters are defined near the top of `apple_predictor_v1.py`.
-
-```python
-RED_THRESHOLD = 50
-RED_DOMINANCE = 1.5
-
-MIN_RED_AREA = 15
-MIN_APPLE_AREA = 30
-MAX_APPLE_AREA = 5000
-
-MIN_CIRCULARITY = 0.20
-MAX_ASPECT_RATIO = 2.5
-
-BRANCH_DILATION = 100
-MIN_BRANCH_OVERLAP = 0.05
-
-MORPH_KERNEL_SIZE = 5
-```
-
-These parameters can be adjusted depending on the appearance of the apples and the amount of noise in the images.
-
-## Current Limitations
-
-The current implementation has several limitations.
-
-### Colour dependence
-
-The detector relies heavily on red colour information. Apples that are:
-
-* poorly illuminated
-* occluded
-* not sufficiently red
-* affected by reflections or shadows
-
-may not be detected reliably.
-
-### False positives
-
-Other red objects or regions can potentially be detected as apples. Shape and branch-overlap filtering are used to reduce these false positives, but they cannot eliminate them completely.
-
-### Depth is not currently used for 3D localisation
-
-The depth map is currently used only to determine whether a pixel has valid depth:
-
-```python
-depth > 0
-```
-
-The actual depth value is not currently used to calculate the apple's 3D position.
-
-Therefore, the current system should be considered a **2D apple detection/localisation pipeline**, rather than a full 3D apple localisation system.
-
-### Ground-truth dependence
-
-The branch-region filtering currently makes use of the GT mask to determine whether a detected red region is sufficiently close to the tree structure.
-
-This means the current approach relies on labelled information during detection and is not yet a completely independent deployment pipeline.
-
-## Future Work
-
-Potential improvements include:
-
-* Using depth values to estimate the 3D position of each detected apple
-* Combining apple detections with reconstructed 3D geometry
-* Improving detection of partially occluded apples
-* Using a learned object-detection or segmentation model
-* Reducing dependence on manually labelled GT masks
-* Combining RGB detection with LiDAR or reconstructed point clouds
-* Evaluating detection performance against labelled apple locations
-* Comparing traditional image-processing methods with neural-network-based approaches
-
-## Project Direction
-
-A longer-term goal is to investigate how **2D apple detection can be combined with 3D reconstruction** to obtain the spatial location of apples within an orchard.
-
-The current detector therefore provides the image-space apple candidates that can potentially be associated with depth or reconstructed 3D information in future stages of the project.
-
-## Author
-
-Chan Lik Wai
+Author: Chan Lik Wai. Prepared for the MMA3001 Numerical Methods and Machine Learning project. The implementation uses the TreeID orchard data supplied for the project and an apple COCO export whose precise provenance/licence should be recorded before redistribution. It uses NumPy, OpenCV, Pillow, SciPy, Matplotlib, PyTorch/torchvision and RF-DETR; documentation uses Sphinx/MyST. ResNet-34, U-Net, ASPP and attention/residual blocks describe the implemented architecture. Earlier prose referred to an unnamed paper; no specific citation is recoverable from the maintained source, so bibliographic attribution remains to be supplied rather than guessed.

@@ -1,7 +1,11 @@
-"""Traditional branch-guided red-apple detector with RF-DETR-compatible instance CSV.
+"""Detect red apples with depth validity and branch ground truth.
 
-Place in the repository's src/ directory and run from repository root:
-    python src/apple_detector_v1_with_instances.py
+A 2D image-space baseline, not metric 3D localisation. Branch GT (>0) is stretched to
+the full RGB grid and dilated. RGB/depth must be aligned. Writes annotation PNGs,
+counts, instances, timings and metadata under outputs/apple_detection.
+
+Example:
+    python src/apple_predictor_v1.py
 """
 from pathlib import Path
 import csv
@@ -46,6 +50,16 @@ INSTANCE_FIELDS = [
 
 
 def parse_rgb_filename(path):
+    """Parse tree, season and time from an RGB PNG basename.
+
+    Args:
+        path: pathlib.Path; expected
+            R<digits>N<digits>_<Summer|Winter>_RGB-<time>.png.
+
+    Returns:
+        dict[str, str] or None: tree, season and time in original case, or None for
+            unmatched names.
+    """
     match = re.fullmatch(
         r'(?P<tree>R\d+N\d+)_(?P<season>Summer|Winter)_RGB-(?P<time>.+)\.png',
         path.name,
@@ -55,10 +69,33 @@ def parse_rgb_filename(path):
 
 
 def load_rgb(path):
+    """Read an image in RGB channel order.
+
+    Args:
+        path: str or pathlib.Path; readable image path.
+
+    Returns:
+        numpy.ndarray: uint8 [H, W, 3] RGB in [0, 255].
+
+    Raises:
+        OSError: If image opening or decoding fails.
+    """
     return np.asarray(Image.open(path).convert('RGB'))
 
 
 def load_depth(path):
+    """Read stored depth intensities without metric conversion.
+
+    Args:
+        path: str or pathlib.Path; readable depth image.
+
+    Returns:
+        numpy.ndarray: [H, W] in stored dtype; first channel is used for
+            multichannel images.
+
+    Raises:
+        OSError: If image opening or decoding fails.
+    """
     depth = np.asarray(Image.open(path))
     if depth.ndim == 3:
         depth = depth[:, :, 0]
@@ -66,6 +103,23 @@ def load_depth(path):
 
 
 def load_gt(path, target_shape):
+    """Load branch ground truth and stretch it to the RGB grid.
+
+    Nearest-neighbour interpolation preserves labels. Full-frame stretching differs from
+    RF-DETR default central placement; it does not verify annotation geometry.
+
+    Args:
+        path: str or pathlib.Path; branch GT image, not apple-instance annotation.
+        target_shape: tuple[int, int]; positive original (height, width) in pixels.
+
+    Returns:
+        numpy.ndarray: uint8 [H, W] grayscale GT; foreground is interpreted
+            downstream as >0.
+
+    Raises:
+        OSError: If GT cannot be decoded.
+        cv2.error: If resize dimensions are invalid.
+    """
     gt = np.asarray(Image.open(path).convert('L'))
     if gt.shape != target_shape:
         gt = cv2.resize(
@@ -76,6 +130,21 @@ def load_gt(path, target_shape):
 
 
 def detect_red_mask(rgb, depth):
+    """Select red-dominant pixels with valid depth.
+
+    Floating channel arithmetic avoids uint8 overflow. Thresholds are module constants;
+    depth supplies validity, not 3D coordinates.
+
+    Args:
+        rgb: numpy.ndarray; [H, W, 3] RGB intensities in [0, 255].
+        depth: numpy.ndarray; aligned [H, W] values, valid when >0.
+
+    Returns:
+        numpy.ndarray: uint8 [H, W] binary mask.
+
+    Raises:
+        ValueError: If depth cannot broadcast to the RGB grid.
+    """
     r = rgb[:, :, 0].astype(np.float32)
     g = rgb[:, :, 1].astype(np.float32)
     b = rgb[:, :, 2].astype(np.float32)
@@ -84,14 +153,43 @@ def detect_red_mask(rgb, depth):
 
 
 def clean_red_mask(mask):
+    """Suppress isolated red noise and close small gaps.
+
+    The ellipse is MORPH_KERNEL_SIZE pixels wide/high. Morphology may merge nearby
+    regions; components are candidates rather than guaranteed apples.
+
+    Args:
+        mask: numpy.ndarray; uint8 [H, W] binary red mask.
+
+    Returns:
+        numpy.ndarray: uint8 [H, W] opened then closed mask.
+
+    Raises:
+        cv2.error: If mask or kernel is invalid.
+    """
     kernel = cv2.getStructuringElement(
         cv2.MORPH_ELLIPSE, (MORPH_KERNEL_SIZE, MORPH_KERNEL_SIZE)
     )
+    # Opening removes isolated red noise; closing reconnects small within-region gaps.
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
     return cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
 
 
 def create_branch_zone(gt):
+    """Dilate labelled branch pixels into a proximity region.
+
+    BRANCH_DILATION is ellipse diameter in source-image pixels, not radius. Uses
+    ground-truth branches, not predicted segmentation.
+
+    Args:
+        gt: numpy.ndarray; aligned [H, W] branch GT, foreground >0.
+
+    Returns:
+        numpy.ndarray: uint8 [H, W] zone in {0, 1}.
+
+    Raises:
+        cv2.error: If morphology input or kernel is invalid.
+    """
     kernel = cv2.getStructuringElement(
         cv2.MORPH_ELLIPSE, (BRANCH_DILATION, BRANCH_DILATION)
     )
@@ -99,6 +197,25 @@ def create_branch_zone(gt):
 
 
 def find_apple_candidates(rgb, depth, gt):
+    """Filter connected red components by geometry and branch proximity.
+
+    Original-image coordinates: top-left origin, x right, y down. Overlap is
+    intersection/whole-component area. Red score is mean R/(G+B+1), not calibrated
+    confidence. No apple labels are read.
+
+    Args:
+        rgb: numpy.ndarray; uint8 [H, W, 3] RGB.
+        depth: numpy.ndarray; aligned [H, W] depth-validity intensities.
+        gt: numpy.ndarray; aligned [H, W] branch ground truth.
+
+    Returns:
+        list[dict]: label, area (pixels), bbox (x, y, width, height), centroid (x,
+            y), circularity, aspect_ratio, branch_overlap and red_score.
+
+    Raises:
+        ValueError: If RGB/depth/GT spatial shapes differ.
+        cv2.error: If image processing fails.
+    """
     if rgb.shape[:2] != depth.shape or depth.shape != gt.shape:
         raise ValueError('RGB, depth and branch GT masks must be aligned')
     red_mask = clean_red_mask(detect_red_mask(rgb, depth))
@@ -125,6 +242,7 @@ def find_apple_candidates(rgb, depth, gt):
         if not contours:
             continue
         perimeter = cv2.arcLength(max(contours, key=cv2.contourArea), True)
+        # Degenerate contours have no meaningful circularity and would divide by zero.
         if perimeter == 0:
             continue
         # Preserve the original filtering rule for a comparable baseline.
@@ -133,6 +251,7 @@ def find_apple_candidates(rgb, depth, gt):
             continue
         local_branch = branch_zone[y:y + h, x:x + w]
         overlap_pixels = np.count_nonzero((component > 0) & (local_branch > 0))
+        # Use the whole red component as denominator, so proximity is a fraction.
         branch_overlap = overlap_pixels / area
         if branch_overlap < MIN_BRANCH_OVERLAP:
             continue
@@ -148,9 +267,22 @@ def find_apple_candidates(rgb, depth, gt):
 
 
 def render_apple_annotations(image_bgr, boxes, centroids, color_bgr):
-    """Draw identical box, centre, index and count styling for either detector.
+    """Render boxes, centres, indices and total count on a copy.
 
-    All boxes are inclusive (x1, y1, x2, y2); image is OpenCV BGR.
+    zip truncates unequal box/centroid sequences; callers should supply one centre per
+    box.
+
+    Args:
+        image_bgr: numpy.ndarray; uint8 [H, W, 3] OpenCV BGR.
+        boxes: Sequence of inclusive (x1, y1, x2, y2) boxes in pixels.
+        centroids: Sequence of floating (x, y) centres paired with boxes.
+        color_bgr: tuple[int, int, int]; BGR colour in [0, 255].
+
+    Returns:
+        numpy.ndarray: Annotated BGR copy with original shape/dtype.
+
+    Raises:
+        cv2.error: If drawing arguments are invalid.
     """
     annotated = image_bgr.copy()
     for index, (box, center) in enumerate(zip(boxes, centroids), start=1):
@@ -166,7 +298,19 @@ def render_apple_annotations(image_bgr, boxes, centroids, color_bgr):
 
 
 def draw_annotations(rgb, candidates):
-    """Draw orange annotations and return an RGB image for PIL saving."""
+    """Convert candidate boxes to inclusive corners and draw orange labels.
+
+    Args:
+        rgb: numpy.ndarray; uint8 [H, W, 3] RGB.
+        candidates: list[dict] from find_apple_candidates.
+
+    Returns:
+        numpy.ndarray: Annotated RGB copy for Pillow saving.
+
+    Raises:
+        KeyError: If bbox or centroid is missing.
+        cv2.error: If colour conversion or drawing fails.
+    """
     boxes = []
     centers = []
     for apple in candidates:
@@ -179,12 +323,41 @@ def draw_annotations(rgb, candidates):
 
 
 def get_matching_files(rgb_path, info):
+    """Build depth and branch-GT paths for a parsed frame.
+
+    Args:
+        rgb_path: pathlib.Path; accepted but unused.
+        info: dict[str, str]; tree, season and time from parse_rgb_filename.
+
+    Returns:
+        tuple[pathlib.Path, pathlib.Path]: Depth and GT paths; existence is not
+            checked.
+
+    Raises:
+        KeyError: If required metadata is missing.
+    """
     depth_path = DEPTH_DIR / f'{info["tree"]}_{info["season"]}_D-{info["time"]}.png'
     gt_path = GT_DIR / f'{info["tree"]}_{info["season"]}_GT-{info["time"]}.png'
     return depth_path, gt_path
 
 
 def process_frame(rgb_path, info):
+    """Load one frame, detect candidates and save annotations.
+
+    Args:
+        rgb_path: pathlib.Path to the RGB image.
+        info: dict[str, str]; parsed tree, season and time.
+
+    Returns:
+        dict or None: Frame identity, candidates, dimensions and
+            read_ms/detection_ms/save_ms; None if depth or GT is missing. main adds
+            total_ms.
+
+    Raises:
+        ValueError: If RGB/depth shapes differ.
+        OSError: If decoding or annotation saving fails.
+        cv2.error: If image processing fails.
+    """
     depth_path, gt_path = get_matching_files(rgb_path, info)
     if not depth_path.exists() or not gt_path.exists():
         return None
@@ -215,6 +388,14 @@ def process_frame(rgb_path, info):
 
 
 def find_all_frames():
+    """Discover complete configured-season RGB/depth/GT triplets.
+
+    Warns and skips unexpected names or missing companions. An absent RGB directory
+    produces an empty list.
+
+    Returns:
+        list[tuple[pathlib.Path, dict]]: Frames sorted by tree and timestamp string.
+    """
     frames = []
     for rgb_path in RGB_DIR.glob('*.png'):
         info = parse_rgb_filename(rgb_path)
@@ -232,7 +413,20 @@ def find_all_frames():
 
 
 def instance_rows(result):
-    """RF-DETR-compatible first 11 columns; blank confidence is intentional."""
+    """Export components in the shared instance-CSV convention.
+
+    confidence is intentionally blank; red_score is an uncalibrated colour statistic.
+
+    Args:
+        result: dict with image, instances, image_width and image_height.
+
+    Yields:
+        dict: One row per candidate with 1-based apple_id, inclusive xyxy box and
+            mean-pixel centroid in original RGB coordinates.
+
+    Raises:
+        KeyError: If required result/candidate fields are absent.
+    """
     for apple_id, apple in enumerate(result['instances'], 1):
         x, y, w, h = apple['bbox']
         cx, cy = apple['centroid']
@@ -249,6 +443,21 @@ def instance_rows(result):
 
 
 def save_csv(results):
+    """Write counts, instances, timing CSVs and run metadata.
+
+    Overwrites configured CSVs. Durations are milliseconds. Metadata records traditional
+    parameters and GT full-resize alignment.
+
+    Args:
+        results: list[dict]; process_frame results with total_ms added by main.
+
+    Returns:
+        None.
+
+    Raises:
+        KeyError: If any export field, including total_ms, is missing.
+        OSError: If output creation or writing fails.
+    """
     OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
     with COUNTS_CSV.open('w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
@@ -301,6 +510,19 @@ def save_csv(results):
 
 
 def main():
+    """Process configured frames and export traditional detector outputs.
+
+    Configuration uses module constants, not CLI flags. Prints and returns without
+    exports when no complete frames exist.
+
+    Returns:
+        None.
+
+    Raises:
+        ValueError: If RGB/depth geometry differs.
+        OSError: If input reading or output writing fails.
+        cv2.error: If processing fails.
+    """
     frames = find_all_frames()
     if not frames:
         print(f'No matching frames found. Dataset: {DATASET}')

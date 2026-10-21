@@ -1,39 +1,49 @@
 # Usage
 
-Run commands from the **repository root**. The examples below use common
-filenames from the branch-segmentation workflow; change the filename if your
-current `src/` folder uses a different name.
+Run these commands from the repository root in an already provisioned environment. The filenames below exist in this checkout. Training/inference commands are instructions for future intentional runs and were not executed during documentation work.
 
-## Check available arguments
+## Branch options
 
-```bash
-python src/train_pixel_mlp_crop_trainval.py --help
-python src/train_resnet34_unet_crop_trainval.py --help
-python src/train_improved_unet_crop_trainval.py --help
+```powershell
+python src/train_baseline.py --help
+python src/train_unet.py --help
+python src/train_improved_unet.py --help
 ```
 
-## Train a model
+## Train separately
 
-Supply the path to the organised dataset using `--data-root`. For example:
-
-```bash
-python src/train_resnet34_unet_crop_trainval.py --data-root "C:/path/to/Organised"
+```powershell
+python src/train_baseline.py --data-root data/Organised
+python src/train_unet.py --data-root data/Organised
+python src/train_improved_unet.py --data-root data/Organised
 ```
 
-Replace the placeholder with the actual path on your machine. Review the
-script's `--help` output before training to see its supported options and
-default output directory.
+`--data-root` is required. Defaults use summer samples with branch GT; masks must already match the centre-cropped input geometry and size. Use `--output-dir` to select a run location and retain its settings. U-Nets support `--no-pretrained` to avoid requesting ImageNet initialisation. RF-DETR setup is separate; see the root README.
 
-## Build this documentation
+## Winter predictions
 
-Install the documentation dependencies and generate HTML:
+With checkpoints from the default branch training locations:
 
-```bash
-python -m pip install -r docs/requirements-docs.txt
+```powershell
+python test/winter_inference.py --data-root data/Organised --mlp-checkpoint outputs/pixel_mlp_crop_trainval/pixel_mlp_best.pth --unet-checkpoint outputs/resnet34_unet_crop_trainval_output/resnet34_unet_best.pth --improved-checkpoint outputs/improved_resnet34_unet_output/improved_resnet34_unet_best.pth
+```
+
+These are expected generated paths, not files distributed with Git. Override paths for historical/custom runs. Checkpoints must be trusted and architecture-compatible. Supply `--input-size` explicitly when it differs from 256; geometry is not inferred from checkpoint metadata. `--threshold` defaults to 0.5, `--warmup` to 5. Output masks and model-only timing do not measure winter accuracy without GT.
+
+## Build the static guide
+
+With Sphinx/MyST already installed:
+
+```powershell
 python -m sphinx -b html docs/source docs/_build/html
 ```
 
-Open `docs/_build/html/index.html` in a web browser.
+Dependency setup, when separately needed, uses the existing specification:
 
-This branch-only documentation build does not import or execute the project's
-apple detection or RF-DETR scripts.
+```powershell
+python -m pip install -r docs/requirements-docs.txt
+```
+
+Open `docs/_build/html/index.html` after building. This is a generated path, not a committed HTML file. The guide does not import project training or detector modules. No dependency installation or HTML build was performed for this documentation update.
+
+For complete apple detection/comparison commands, local synthetic test instructions and documented pre-existing test issues, see the repository root README and docs/documentation_verification.md.

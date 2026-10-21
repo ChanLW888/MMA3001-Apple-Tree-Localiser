@@ -1,4 +1,11 @@
-"""Sphinx configuration for branch-segmentation documentation."""
+"""Configure static Sphinx branch-segmentation documentation.
+
+Uses MyST Markdown and Alabaster. No project model modules are imported; building this
+guide does not train or run detectors.
+
+Example:
+    python -m sphinx -b html docs/source docs/_build/html
+"""
 
 from pathlib import Path
 
@@ -9,6 +16,7 @@ project = "Apple Tree Localiser — Branch Segmentation"
 author = "Project contributors"
 copyright = "2026, Project contributors"
 
+# Static Markdown pages avoid importing scripts with training or filesystem side effects.
 extensions = ["myst_parser"]
 
 templates_path = ["_templates"]

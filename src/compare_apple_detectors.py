@@ -1,5 +1,12 @@
-﻿"""Compare fixed apple predictions against RF-DETR pseudo-ground truth.
-Run from repository root: conda run -n treeid python src/compare_apple_detectors.py
+﻿"""Compare traditional predictions with RF-DETR pseudo-ground truth.
+
+Matches exact basenames and original-image centroids from saved CSVs. One-to-one
+matching maximises valid pairs before minimising distance. Agreement is not
+independently verified accuracy. Runs no detector inference. Generated report prose
+includes fixed historical statements that this program does not verify.
+
+Example:
+    python src/compare_apple_detectors.py --max-distance 30 --thresholds 10 20 30 40 50
 """
 import argparse
 import csv
@@ -20,6 +27,18 @@ REQUIRED = {'image', 'apple_id', 'cx_px', 'cy_px', 'x1', 'y1', 'x2', 'y2', 'area
 
 
 def read_csv(path):
+    """Read headers and rows from a possibly BOM-prefixed CSV.
+
+    Args:
+        path: str or pathlib.Path to UTF-8 CSV.
+
+    Returns:
+        tuple[list[str], list[dict[str, str]]]: Header names and unconverted rows.
+
+    Raises:
+        ValueError: If no header exists.
+        OSError: If input reading fails.
+    """
     with Path(path).open(newline='', encoding='utf-8-sig') as f:
         reader = csv.DictReader(f)
         if not reader.fieldnames:
@@ -28,6 +47,24 @@ def read_csv(path):
 
 
 def load_instances(path):
+    """Validate and group inclusive-coordinate instance records.
+
+    IDs are positive and unique per image. Finite nonnegative coordinates must contain
+    the centroid; image bounds are checked later by main. Confidence may be blank or
+    NaN; finite scores must be in [0, 1]. Duplicate geometry is retained.
+
+    Args:
+        path: str or pathlib.Path; CSV containing REQUIRED columns.
+
+    Returns:
+        tuple[dict[str, list[dict]], list[dict]]: Grouped records and retained
+            duplicate-geometry warnings.
+
+    Raises:
+        ValueError: If headers, IDs, geometry, area, overlap or confidence are
+            invalid.
+        OSError: If CSV reading fails.
+    """
     fields, rows = read_csv(path)
     if REQUIRED - set(fields):
         raise ValueError(f'{path}: missing columns {sorted(REQUIRED-set(fields))}')
@@ -65,6 +102,24 @@ def load_instances(path):
 
 
 def load_counts(path, instances):
+    """Validate processed-image counts against instance rows.
+
+    Traditional identity comes from Annotated_Image; RF-DETR uses image. Counts
+    distinguish zero detections from unprocessed images.
+
+    Args:
+        path: str or pathlib.Path; traditional or RF-DETR counts CSV.
+        instances: Mapping[str, list[dict]] grouped by exact image basename.
+
+    Returns:
+        dict[str, int]: Nonnegative counts, including processed zero-detection
+            frames.
+
+    Raises:
+        ValueError: If headers, integer counts, unique names or instance/count
+            agreement fail.
+        OSError: If CSV reading fails.
+    """
     fields, rows = read_csv(path)
     traditional = 'Apple_Count' in fields
     required = {'Annotated_Image','Apple_Count'} if traditional else {'image','kept_apple_count'}
@@ -85,11 +140,25 @@ def load_counts(path, instances):
 
 
 def match_centroids(reference, traditional, threshold):
-    """Maximum-cardinality valid matching, then minimum summed distance.
+    """Maximise valid one-to-one pairs, then minimise summed distance.
 
-    Dummy columns allow unmatched references. A penalty greater than any
-    possible valid total ensures cardinality takes priority over distance.
-    Threshold is inclusive; forbidden edges never displace valid pairs.
+    Hungarian assignment adds unmatched dummy columns. A penalty larger than any valid
+    total prioritises cardinality over distance. RF-DETR is pseudo-ground truth, not
+    independently verified apple annotation.
+
+    Args:
+        reference: Sequence[dict] with RF-DETR cx_px and cy_px.
+        traditional: Sequence[dict] with traditional cx_px and cy_px.
+        threshold: float; finite nonnegative inclusive Euclidean tolerance in
+            original-image pixels.
+
+    Returns:
+        list[tuple[int, int, float]]: Reference index, traditional index and
+            distance; empty if either sequence is empty.
+
+    Raises:
+        ValueError: If threshold is negative/nonfinite or assignment costs are
+            invalid.
     """
     if threshold < 0 or not np.isfinite(threshold):
         raise ValueError('threshold must be finite and nonnegative')
@@ -98,6 +167,7 @@ def match_centroids(reference, traditional, threshold):
     r = np.array([[a['cx_px'], a['cy_px']] for a in reference])
     p = np.array([[a['cx_px'], a['cy_px']] for a in traditional])
     distances = np.linalg.norm(r[:,None,:]-p[None,:,:], axis=2)
+    # One unmatched penalty exceeds any sum of valid distances, preserving cardinality.
     penalty = (min(len(r),len(p))+1)*(threshold+1)
     costs = np.full((len(r), len(p)+len(r)), penalty)
     costs[:,:len(p)] = np.where(distances <= threshold, distances, penalty*2)
@@ -107,12 +177,41 @@ def match_centroids(reference, traditional, threshold):
 
 
 def bbox_iou(a,b):
+    """Measure overlap of two inclusive xyxy pixel boxes.
+
+    The +1 terms count both boundary pixels. IoU is descriptive, not a centroid matching
+    criterion.
+
+    Args:
+        a: dict with numeric x1, y1, x2, y2; valid nonempty box.
+        b: dict with the same inclusive-coordinate fields.
+
+    Returns:
+        float: Intersection/union in [0, 1] for valid boxes.
+
+    Raises:
+        KeyError: If a coordinate is missing.
+    """
     intersection = max(0,min(a['x2'],b['x2'])-max(a['x1'],b['x1'])+1)*max(0,min(a['y2'],b['y2'])-max(a['y1'],b['y1'])+1)
     area = lambda r: (r['x2']-r['x1']+1)*(r['y2']-r['y1']+1)
     return intersection/(area(a)+area(b)-intersection)
 
 
 def agreement(tp, fp, fn):
+    """Compute micro agreement relative to RF-DETR.
+
+    Error labels express disagreement with model predictions, not verified real-world
+    errors.
+
+    Args:
+        tp: int; nonnegative accepted match count.
+        fp: int; nonnegative unmatched traditional detections.
+        fn: int; nonnegative unmatched reference detections.
+
+    Returns:
+        dict[str, int | float]: Reference-relative counts, precision, recall and F1;
+            undefined ratios return zero.
+    """
     precision = tp/(tp+fp) if tp+fp else 0.
     recall = tp/(tp+fn) if tp+fn else 0.
     return dict(tp_relative_to_rfdetr=tp, fp_relative_to_rfdetr=fp,
@@ -122,6 +221,27 @@ def agreement(tp, fp, fn):
 
 
 def evaluate(images, ref, pred, threshold):
+    """Summarise fixed detections over common processed images.
+
+    Missing instance keys imply zero detections. Count error is traditional minus
+    reference. Distance/IoU statistics condition on accepted matches; absent samples
+    yield None. Global agreement is micro; image_macro_f1 averages per-image F1.
+
+    Args:
+        images: Nonempty reusable collection[str] of common exact basenames,
+            including zero-count frames.
+        ref: Mapping[str, list[dict]] of RF-DETR pseudo-reference records.
+        pred: Mapping[str, list[dict]] of traditional records.
+        threshold: float; finite nonnegative inclusive tolerance in pixels.
+
+    Returns:
+        tuple[list[dict], list[dict], dict]: Per-image metrics, matched/unmatched
+            pairs and aggregate summary.
+
+    Raises:
+        ValueError: If matching tolerance is invalid.
+        ZeroDivisionError: If images is empty.
+    """
     per_image, pairs, distances = [], [], []
     for image in sorted(images):
         r,p = ref.get(image,[]), pred.get(image,[])
@@ -135,6 +255,21 @@ def evaluate(images, ref, pred, threshold):
             mean_centroid_error_px=float(np.mean(ds)) if ds else None,
             median_centroid_error_px=float(np.median(ds)) if ds else None))
         def pair(i,j,d,status):
+            """Build a matched or unmatched record for the current image.
+
+            Args:
+                i: int or None; reference index, absent for unmatched prediction.
+                j: int or None; prediction index, absent for unmatched reference.
+                d: float or str; accepted distance in pixels, or empty string.
+                status: str; matched, unmatched_reference or unmatched_traditional.
+
+            Returns:
+                dict: Image, IDs, distance, conditional inclusive-box IoU and
+                    status.
+
+            Raises:
+                IndexError: If a supplied index is outside the current records.
+            """
             return dict(image=image,reference_apple_id=r[i]['apple_id'] if i is not None else '',
                 traditional_apple_id=p[j]['apple_id'] if j is not None else '',
                 centroid_distance_px=d, bbox_iou=bbox_iou(r[i],p[j]) if i is not None and j is not None else '',status=status)
@@ -168,6 +303,21 @@ def evaluate(images, ref, pred, threshold):
 
 
 def write_csv(path,rows,fields=None):
+    """Write dictionaries using explicit or inferred columns.
+
+    Args:
+        path: str or pathlib.Path; parent must exist.
+        rows: list[dict]; records compatible with fields.
+        fields: Sequence[str] or None; explicit order, required for empty rows.
+
+    Returns:
+        None.
+
+    Raises:
+        IndexError: If rows is empty and fields is absent/empty.
+        ValueError: If rows have unexpected columns.
+        OSError: If writing fails.
+    """
     with Path(path).open('w',newline='',encoding='utf-8') as f:
         writer=csv.DictWriter(f,fieldnames=fields or list(rows[0]))
         writer.writeheader()
@@ -175,6 +325,21 @@ def write_csv(path,rows,fields=None):
 
 
 def main():
+    """Compare saved CSVs without rerunning either detector.
+
+    Writes metrics, sensitivity, coverage, examples, SHA-256 manifest and annotation
+    inventory. Defaults to apple_rfdetr_instances and apple_detection under outputs.
+    Current source is not proof of historical CSV provenance. Embedded report prose is
+    fixed program data, not verified experiment history.
+
+    Returns:
+        None.
+
+    Raises:
+        SystemExit: If CLI arguments are invalid or --help is requested.
+        ValueError: If CSVs, counts, geometry, coverage or tolerance are invalid.
+        OSError: If inputs or report/plot outputs cannot be accessed.
+    """
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--reference-dir',type=Path,default=ROOT/'outputs/apple_rfdetr_instances')
     parser.add_argument('--traditional-dir',type=Path,default=ROOT/'outputs/apple_detection')
@@ -189,6 +354,7 @@ def main():
     pred,pd=load_instances(args.traditional_dir/'apple_instances.csv')
     rc=load_counts(args.reference_dir/'apple_counts.csv',ref)
     pc=load_counts(args.traditional_dir/'apple_counts.csv',pred)
+    # Counts distinguish processed zero-detection frames from absent instance rows.
     images=set(rc)&set(pc)
     if not images:
         raise ValueError('No exact matching processed image filenames')
