@@ -14,7 +14,7 @@
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="optimise_apple_predictor" href="optimise_apple_predictor.html" />
+    <link rel="next" title="preprocess_roboflow_dataset" href="preprocess_roboflow_dataset.html" />
     <link rel="prev" title="dataset_organiser" href="dataset_organiser.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
@@ -43,85 +43,356 @@ Run from the repository root: python src/full_grid_search_apple.py</p>
 <p>All 5,184 combinations are evaluated against the <em>existing</em> RF-DETR instance CSV.
 Only traditional colour/component/morphology constants vary. Branch-region
 constants, GT alignment, matching threshold and RF-DETR files are unchanged.
-A resume-safe all_experiments.csv is appended after each successful configuration.
+A resumable all_experiments.csv is appended after each successful configuration.
+See main for fingerprint coverage and the held-out objective-change limitation.
 By default tune on development trees, then compare the chosen model with the
 baseline on separate held-out trees. No annotated PNGs or per-run CSVs are made.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="full_grid_search_apple.load_module">
 <span class="sig-prename descclassname"><span class="pre">full_grid_search_apple.</span></span><span class="sig-name descname"><span class="pre">load_module</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alias</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#full_grid_search_apple.load_module" title="Link to this definition">¶</a></dt>
-<dd><p>No docstring is present in the source.</p>
+<dd><p>Load a Python file under a supplied import alias.</p>
+<p>Executes module-level statements and registers the module in sys.modules;
+callers must use trusted, import-safe files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – pathlib.Path to a Python source file.</p></li>
+<li><p><strong>alias</strong> – str module name used in sys.modules.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Executed module.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ModuleType</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>FileNotFoundError</strong> – If path is not a file.</p></li>
+<li><p><strong>Exception</strong> – Exceptions raised by the imported module propagate.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="full_grid_search_apple.file_hash">
 <span class="sig-prename descclassname"><span class="pre">full_grid_search_apple.</span></span><span class="sig-name descname"><span class="pre">file_hash</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#full_grid_search_apple.file_hash" title="Link to this definition">¶</a></dt>
-<dd><p>No docstring is present in the source.</p>
+<dd><p>Fingerprint a complete file for run provenance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – pathlib.Path to a readable file; bytes are read into memory.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Hexadecimal SHA-256 digest.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>OSError</strong> – If reading fails.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="full_grid_search_apple.tree_partition">
 <span class="sig-prename descclassname"><span class="pre">full_grid_search_apple.</span></span><span class="sig-name descname"><span class="pre">tree_partition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#full_grid_search_apple.tree_partition" title="Link to this definition">¶</a></dt>
-<dd><p>No docstring is present in the source.</p>
+<dd><p>Assign every frame of one tree to the same deterministic split.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filename</strong> – str basename whose prefix before the first underscore is a
+tree ID. No filename validation is performed.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">test</span></code> when the SHA-256-derived fraction is below 0.2,
+otherwise <code class="docutils literal notranslate"><span class="pre">development</span></code>. The observed split need not be exactly 20%.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="full_grid_search_apple.combinations">
 <span class="sig-prename descclassname"><span class="pre">full_grid_search_apple.</span></span><span class="sig-name descname"><span class="pre">combinations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#full_grid_search_apple.combinations" title="Link to this definition">¶</a></dt>
-<dd><p>No docstring is present in the source.</p>
+<dd><p>Enumerate the Cartesian product of the current module GRID.</p>
+<p>Grid insertion order determines run IDs. The current seven parameter lists
+produce 4 * 4 * 4 * 3 * 3 * 3 * 3 = 5,184 configurations. Branch dilation
+and overlap are absent from the grid and remain fixed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Yields<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>tuple[str, dict]</em> – Zero-based grid_NNNN ID and detector constants.
+Each call produces new parameter dictionaries.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="full_grid_search_apple.append_row">
 <span class="sig-prename descclassname"><span class="pre">full_grid_search_apple.</span></span><span class="sig-name descname"><span class="pre">append_row</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">row</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#full_grid_search_apple.append_row" title="Link to this definition">¶</a></dt>
-<dd><p>No docstring is present in the source.</p>
+<dd><p>Append one configuration and its metrics to the result CSV.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – pathlib.Path; parent directory must exist.</p></li>
+<li><p><strong>row</strong> – dict with SUMMARY_FIELDS-compatible keys. Missing values are blank.
+A header is written only when the file is empty.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ValueError</strong> – If row contains unexpected columns.</p></li>
+<li><p><strong>OSError</strong> – If opening or writing fails.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="full_grid_search_apple.load_rows">
 <span class="sig-prename descclassname"><span class="pre">full_grid_search_apple.</span></span><span class="sig-name descname"><span class="pre">load_rows</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#full_grid_search_apple.load_rows" title="Link to this definition">¶</a></dt>
-<dd><p>No docstring is present in the source.</p>
+<dd><p>Read resumable results and require the exact current column order.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – pathlib.Path to all_experiments.csv.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Raw CSV rows, or an empty list for an absent file.
+Run IDs and row values are not otherwise validated here.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[dict[str, str]]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If the header differs from SUMMARY_FIELDS.</p></li>
+<li><p><strong>OSError</strong> – If an existing file cannot be read.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="full_grid_search_apple.numeric">
 <span class="sig-prename descclassname"><span class="pre">full_grid_search_apple.</span></span><span class="sig-name descname"><span class="pre">numeric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">row</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maximize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#full_grid_search_apple.numeric" title="Link to this definition">¶</a></dt>
-<dd><p>No docstring is present in the source.</p>
+<dd><p>Convert a metric into a score where larger is preferred.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>row</strong> – Mapping of metric names to numeric values or numeric strings.</p></li>
+<li><p><strong>key</strong> – str metric column.</p></li>
+<li><p><strong>maximize</strong> – bool; negate finite values when False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Oriented score; negative infinity for absent, invalid or
+nonfinite values, independent of optimisation direction.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="full_grid_search_apple.score">
 <span class="sig-prename descclassname"><span class="pre">full_grid_search_apple.</span></span><span class="sig-name descname"><span class="pre">score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">row</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#full_grid_search_apple.score" title="Link to this definition">¶</a></dt>
-<dd><p>No docstring is present in the source.</p>
+<dd><p>Map a supported optimisation objective to a larger-is-better score.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>row</strong> – Mapping containing evaluation metric columns.</p></li>
+<li><p><strong>metric</strong> – One of f1, precision, recall, mae, rmse, centroid, bbox_iou,
+count_bias. Errors/distances are minimised, agreement maximised,
+and signed bias minimised in absolute magnitude.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Oriented score; most invalid metrics become negative infinity.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>KeyError</strong> – If metric is unknown or count_bias lacks its input column.</p></li>
+<li><p><strong>ValueError</strong> – If count_bias cannot be converted to float.</p></li>
+<li><p><strong>TypeError</strong> – If count_bias has an incompatible value type.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Unlike other objectives, count_bias does not reject nonfinite values.</p>
+</div>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="full_grid_search_apple.select_best">
 <span class="sig-prename descclassname"><span class="pre">full_grid_search_apple.</span></span><span class="sig-name descname"><span class="pre">select_best</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rows</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">criterion</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#full_grid_search_apple.select_best" title="Link to this definition">¶</a></dt>
-<dd><p>No docstring is present in the source.</p>
+<dd><p>Select the best row with deterministic baseline tie preference.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rows</strong> – Nonempty sequence of result dictionaries with run_id, BASELINE
+parameter columns and the requested metric.</p></li>
+<li><p><strong>criterion</strong> – str objective accepted by score.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Original winning row. Equal scores prefer exact baseline values,
+then lexicographically smallest run_id.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>IndexError</strong> – If rows is empty.</p></li>
+<li><p><strong>KeyError</strong> – If an objective or required column is missing or unknown.</p></li>
+<li><p><strong>ValueError</strong> – If a parameter cannot be converted to float.</p></li>
+<li><p><strong>TypeError</strong> – If a numeric value has an incompatible type.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="full_grid_search_apple.evaluate_configuration">
 <span class="sig-prename descclassname"><span class="pre">full_grid_search_apple.</span></span><span class="sig-name descname"><span class="pre">evaluate_configuration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frames</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predictor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comparator</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#full_grid_search_apple.evaluate_configuration" title="Link to this definition">¶</a></dt>
-<dd><p>No docstring is present in the source.</p>
+<dd><p>Evaluate cached synthetic or real frames without exporting images.</p>
+<p>Mutates predictor constants in memory; this helper does not restore them.
+The main search restores baseline constants in a finally block.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>params</strong> – Mapping of detector constant names to parameter values.</p></li>
+<li><p><strong>frames</strong> – Iterable of (filename, info, rgb, depth, branch) tuples. RGB
+has shape [H, W, 3]; aligned depth and branch masks have shape [H, W].
+The info element is unused here.</p></li>
+<li><p><strong>names</strong> – Nonempty reusable collection of exact basenames to evaluate.</p></li>
+<li><p><strong>predictor</strong> – Module-like object exposing detector and instance_rows APIs.</p></li>
+<li><p><strong>comparator</strong> – Module-like object exposing evaluate.</p></li>
+<li><p><strong>reference</strong> – Mapping of basenames to saved RF-DETR instance records.</p></li>
+<li><p><strong>threshold</strong> – float inclusive centroid tolerance in original RGB pixels.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Aggregate comparison metrics and elapsed seconds
+for detection/instance conversion, excluding comparison evaluation.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[dict, float]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If spatial shapes or comparison tolerance are invalid.</p></li>
+<li><p><strong>ZeroDivisionError</strong> – If names is empty.</p></li>
+<li><p><strong>KeyError</strong> – If candidate/export fields are missing.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="full_grid_search_apple.main">
 <span class="sig-prename descclassname"><span class="pre">full_grid_search_apple.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#full_grid_search_apple.main" title="Link to this definition">¶</a></dt>
-<dd><p>No docstring is present in the source.</p>
+<dd><p>Run or resume traditional parameter tuning against saved RF-DETR results.</p>
+<p>Reads command-line options through argparse; use –help for paths,
+selection objectives, by-tree/all splits, caching and partial-run options.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None. Appends all_experiments.csv and rewrites best_by_metric.csv and
+metric_rankings.csv. Writes grid_metadata.json and, only after a complete
+by-tree search, heldout_comparison.csv if that file does not already exist.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If baseline/fixed branch settings differ, common inputs or
+partitions are empty, or resume metadata/CSV columns are incompatible.</p></li>
+<li><p><strong>FileNotFoundError</strong> – If configured source or reference files are missing.</p></li>
+<li><p><strong>OSError</strong> – If image/CSV reading or result writing fails.</p></li>
+<li><p><strong>SystemExit</strong> – For argparse help or invalid arguments.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Branch dilation is fixed at 100 pixels and minimum overlap at 0.05.
+Complete traditional RGB/depth/GT triplets are intersected with reference
+count basenames, preserving zero-count images. GT is stretched to RGB
+geometry. Images are cached in RAM unless –no-cache reloads each run.
+RF-DETR CSV predictions are pseudo-reference, never new inference.</p>
+<p>Metrics include micro precision/recall/F1, image macro F1, signed and
+absolute counting errors, RMSE, count agreement rates, conditional centroid
+distances in pixels and inclusive-box IoU. By-tree mode tunes development
+trees and evaluates only the selected configuration and baseline on test
+trees; –split all provides no held-out estimate.</p>
+<p>Resume checks grid, source/reference hashes and development-name hash,
+then skips recorded run IDs. Image bytes, environment versions and test
+names are not fully fingerprinted. Timing depends on machine/load. Source
+docstring edits also change hashes and require a fresh output directory.</p>
+<p>Known limitation: –select-by is not included in metadata, and an existing
+heldout_comparison.csv is never refreshed. A changed objective can reuse
+stale held-out results. Use a separate output directory per objective;
+retain original results. Partial rankings are not exhaustive optima.</p>
+</div>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="full_grid_search_apple.main.load_one">
 <span class="sig-prename descclassname"><span class="pre">main.</span></span><span class="sig-name descname"><span class="pre">load_one</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">info</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#full_grid_search_apple.main.load_one" title="Link to this definition">¶</a></dt>
-<dd><p>No docstring is present in the source.</p>
+<dd><p>Load one aligned RGB/depth/branch frame for evaluation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – pathlib.Path to an RGB image.</p></li>
+<li><p><strong>info</strong> – dict with tree, season and time used to locate companions.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Basename, info, RGB [H, W, 3], depth [H, W] and resized
+branch GT [H, W]; depth retains stored units.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If RGB and depth dimensions differ.</p></li>
+<li><p><strong>OSError</strong> – If image decoding fails.</p></li>
+<li><p><strong>KeyError</strong> – If companion metadata is missing.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="full_grid_search_apple.main.get_frames">
 <span class="sig-prename descclassname"><span class="pre">main.</span></span><span class="sig-name descname"><span class="pre">get_frames</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_split</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#full_grid_search_apple.main.get_frames" title="Link to this definition">¶</a></dt>
-<dd><p>No docstring is present in the source.</p>
+<dd><p>Load all discovered frames belonging to a split.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>target_split</strong> – str; development, test or all, matching groups.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Loaded frame tuples in discovery order; empty if none.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[tuple]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If a frame has inconsistent RGB/depth shapes.</p></li>
+<li><p><strong>OSError</strong> – If image reading fails.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </section>
@@ -167,11 +438,11 @@ baseline on separate held-out trees. No annotated PNGs or per-run CSVs are made.
 <li class="toctree-l2"><a class="reference internal" href="compare_apple_detectors.html">compare_apple_detectors</a></li>
 <li class="toctree-l2"><a class="reference internal" href="dataset_organiser.html">dataset_organiser</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">full_grid_search_apple</a></li>
-<li class="toctree-l2"><a class="reference internal" href="optimise_apple_predictor.html">optimise_apple_predictor</a></li>
 <li class="toctree-l2"><a class="reference internal" href="preprocess_roboflow_dataset.html">preprocess_roboflow_dataset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="train_baseline.html">train_baseline</a></li>
 <li class="toctree-l2"><a class="reference internal" href="train_improved_unet.html">train_improved_unet</a></li>
 <li class="toctree-l2"><a class="reference internal" href="train_unet.html">train_unet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="winter_inference.html">winter_inference</a></li>
 </ul>
 </li>
 </ul>
@@ -182,7 +453,7 @@ baseline on separate held-out trees. No annotated PNGs or per-run CSVs are made.
   <li><a href="../index.html">Documentation overview</a><ul>
   <li><a href="index.html">Source API reference</a><ul>
       <li>Previous: <a href="dataset_organiser.html" title="previous chapter">dataset_organiser</a></li>
-      <li>Next: <a href="optimise_apple_predictor.html" title="next chapter">optimise_apple_predictor</a></li>
+      <li>Next: <a href="preprocess_roboflow_dataset.html" title="next chapter">preprocess_roboflow_dataset</a></li>
   </ul></li>
   </ul></li>
 </ul>

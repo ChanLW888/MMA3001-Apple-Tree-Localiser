@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>winter_inference &#8212; MMA3001 Source Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=d5f7d5f2" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="train_unet" href="train_unet.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-winter_inference">
+<span id="winter-inference"></span><h1>winter_inference<a class="headerlink" href="#module-winter_inference" title="Link to this heading">¶</a></h1>
+<p>Source: <code class="docutils literal notranslate"><span class="pre">src/winter_inference.py</span></code>.</p>
+<p>Statically extracted signatures and existing docstrings; no module execution.</p>
+<p>Run qualitative winter RGB-D inference and model-only timing.</p>
+<p>Reconstructs training MLP/basic/improved U-Nets without ImageNet weight retrieval, then
+strictly loads trusted local checkpoints. Uses training-compatible preprocessing. No
+winter GT is required; predictions cannot establish winter accuracy. Timing excludes
+preprocessing, transfer, sigmoid and saving.</p>
+<p class="rubric">Example</p>
+<p>See README.md for the invocation supplying all three checkpoints.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="winter_inference.crop_square">
+<span class="sig-prename descclassname"><span class="pre">winter_inference.</span></span><span class="sig-name descname"><span class="pre">crop_square</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">im</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.crop_square" title="Link to this definition">¶</a></dt>
+<dd><p>Crop a PIL image to its largest centred square.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>im</strong> – PIL.Image.Image to crop.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Square with side min(width, height).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>PIL.Image.Image</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="winter_inference.sample_key">
+<span class="sig-prename descclassname"><span class="pre">winter_inference.</span></span><span class="sig-name descname"><span class="pre">sample_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pat</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.sample_key" title="Link to this definition">¶</a></dt>
+<dd><p>Replace the first modality token, retaining frame identity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>p</strong> – pathlib.Path to a winter image.</p></li>
+<li><p><strong>pat</strong> – re.Pattern for RGB or depth token.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Stem with first token replaced by _TIME-.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="winter_inference.discover">
+<span class="sig-prename descclassname"><span class="pre">winter_inference.</span></span><span class="sig-name descname"><span class="pre">discover</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">root</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.discover" title="Link to this definition">¶</a></dt>
+<dd><p>Find complete winter RGB/depth pairs without requiring GT.</p>
+<p>Reports unmatched RGB images and excludes incomplete pairs. Filenames do not verify
+geometric alignment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>root</strong> – pathlib.Path; recursively searched dataset root.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Sorted key, rgb and depth records.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[dict]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>RuntimeError</strong> – If duplicate keys occur or no pairs exist.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="winter_inference.preprocess">
+<span class="sig-prename descclassname"><span class="pre">winter_inference.</span></span><span class="sig-name descname"><span class="pre">preprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.preprocess" title="Link to this definition">¶</a></dt>
+<dd><p>Apply training-compatible RGB-D preprocessing.</p>
+<p>Centre-crops both modalities; RGB is bilinear, /255 then ImageNet standardised.
+Depth is nearest neighbour, grayscale /255, not metric distance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>s</strong> – dict with rgb and depth pathlib.Path entries.</p></li>
+<li><p><strong>size</strong> – int; positive square input side in pixels, normally 256.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Float32 [4, size,</dt><dd><p>size] input, resized RGB and L-mode depth.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[torch.Tensor, PIL.Image.Image, PIL.Image.Image]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>OSError</strong> – If images cannot be decoded.</p></li>
+<li><p><strong>ValueError</strong> – If resize dimensions are invalid.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="winter_inference.PixelMLP">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">winter_inference.</span></span><span class="sig-name descname"><span class="pre">PixelMLP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nn.Module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.PixelMLP" title="Link to this definition">¶</a></dt>
+<dd><p>Reconstruct the training pixel MLP for checkpoint inference.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="winter_inference.PixelMLP.__init__">
+<span class="sig-prename descclassname"><span class="pre">PixelMLP.</span></span><span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_dims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(64,</span> <span class="pre">32,</span> <span class="pre">16)</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.PixelMLP.__init__" title="Link to this definition">¶</a></dt>
+<dd><p>Construct four-feature pixel layers with matching checkpoint names.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>hidden_dims</strong> – tuple[int, …]; positive hidden widths matching the
+checkpoint.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="winter_inference.PixelMLP.forward">
+<span class="sig-prename descclassname"><span class="pre">PixelMLP.</span></span><span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.PixelMLP.forward" title="Link to this definition">¶</a></dt>
+<dd><p>Classify each pixel independently.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> – torch.Tensor; [B, 4, H, W] preprocessed RGB-D.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Raw [B, 1, H, W] branch logits.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>RuntimeError</strong> – If feature count or dtype/device is incompatible.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="winter_inference.decoder_block">
+<span class="sig-prename descclassname"><span class="pre">winter_inference.</span></span><span class="sig-name descname"><span class="pre">decoder_block</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_ch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mid_ch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_ch</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.decoder_block" title="Link to this definition">¶</a></dt>
+<dd><p>Construct a two-convolution decoder feature block.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>in_ch</strong> – int; positive input channels.</p></li>
+<li><p><strong>mid_ch</strong> – int; positive hidden channels.</p></li>
+<li><p><strong>out_ch</strong> – int; positive output channels.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>3x3 convolution, batch-normalisation and ReLU layers</dt><dd><p>preserving spatial size.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.nn.Sequential</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="winter_inference.BasicUNet">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">winter_inference.</span></span><span class="sig-name descname"><span class="pre">BasicUNet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nn.Module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.BasicUNet" title="Link to this definition">¶</a></dt>
+<dd><p>Predict branch logits with a four-channel ResNet-34 U-Net.</p>
+<p>Encoder skip features restore spatial detail during decoding. Layers match training
+checkpoint keys; construction uses weights=None.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="winter_inference.BasicUNet.__init__">
+<span class="sig-prename descclassname"><span class="pre">BasicUNet.</span></span><span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.BasicUNet.__init__" title="Link to this definition">¶</a></dt>
+<dd><p>Construct encoder and decoder layers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="winter_inference.BasicUNet.up">
+<span class="sig-prename descclassname"><span class="pre">BasicUNet.</span></span><span class="sig-name descname"><span class="pre">up</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.BasicUNet.up" title="Link to this definition">¶</a></dt>
+<dd><p>Match a feature map to an encoder grid before concatenation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – torch.Tensor; floating [B, C, H, W] features.</p></li>
+<li><p><strong>ref</strong> – torch.Tensor; last two dimensions define destination size.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Bilinear [B, C, Href, Wref] features, align_corners=False.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If interpolation receives invalid spatial rank.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="winter_inference.BasicUNet.forward">
+<span class="sig-prename descclassname"><span class="pre">BasicUNet.</span></span><span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.BasicUNet.forward" title="Link to this definition">¶</a></dt>
+<dd><p>Decode RGB-D features into full-resolution branch logits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> – torch.Tensor; floating [B, 4, H, W] batch using training
+preprocessing.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Raw [B, 1, H, W] logits; sigmoid converts to</dt><dd><p>probabilities.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>RuntimeError</strong> – If channels, spatial size or dtype/device is incompatible.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="winter_inference.ConvNormAct">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">winter_inference.</span></span><span class="sig-name descname"><span class="pre">ConvNormAct</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nn.Module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.ConvNormAct" title="Link to this definition">¶</a></dt>
+<dd><p>Extract features with convolution, batch normalisation and ReLU.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="winter_inference.ConvNormAct.__init__">
+<span class="sig-prename descclassname"><span class="pre">ConvNormAct.</span></span><span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ic</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.ConvNormAct.__init__" title="Link to this definition">¶</a></dt>
+<dd><p>Build a padded feature convolution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ic</strong> – int; positive input channels.</p></li>
+<li><p><strong>oc</strong> – int; positive output channels.</p></li>
+<li><p><strong>k</strong> – int; positive kernel side, normally odd.</p></li>
+<li><p><strong>d</strong> – int; positive dilation rate.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="winter_inference.ConvNormAct.forward">
+<span class="sig-prename descclassname"><span class="pre">ConvNormAct.</span></span><span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.ConvNormAct.forward" title="Link to this definition">¶</a></dt>
+<dd><p>Transform a batch of features.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> – torch.Tensor; [B, input_channels, H, W].</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>[B, output_channels, H, W] features for odd kernels; not</dt><dd><p>branch logits.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>RuntimeError</strong> – If channels, batch-normalisation input or device is
+incompatible.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="winter_inference.ResidualDecoderBlock">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">winter_inference.</span></span><span class="sig-name descname"><span class="pre">ResidualDecoderBlock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nn.Module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.ResidualDecoderBlock" title="Link to this definition">¶</a></dt>
+<dd><p>Fuse resized decoder and skip features through a residual path.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="winter_inference.ResidualDecoderBlock.__init__">
+<span class="sig-prename descclassname"><span class="pre">ResidualDecoderBlock.</span></span><span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ic</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oc</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.ResidualDecoderBlock.__init__" title="Link to this definition">¶</a></dt>
+<dd><p>Construct convolutions and a channel-matching shortcut.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ic</strong> – int; positive decoder channels.</p></li>
+<li><p><strong>sc</strong> – int; skip channels, or 0 when no skip will be provided.</p></li>
+<li><p><strong>oc</strong> – int; positive output channels.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="winter_inference.ResidualDecoderBlock.forward">
+<span class="sig-prename descclassname"><span class="pre">ResidualDecoderBlock.</span></span><span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.ResidualDecoderBlock.forward" title="Link to this definition">¶</a></dt>
+<dd><p>Resize to the skip grid, concatenate and add a residual projection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – torch.Tensor; [B, decoder_channels, H, W].</p></li>
+<li><p><strong>skip</strong> – torch.Tensor or None; [B, skip_channels, Hs, Ws] encoder features.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>[B, output_channels, Hs, Ws] with skip; otherwise retains</dt><dd><p>input grid.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>RuntimeError</strong> – If concatenated channels or devices are incompatible.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="winter_inference.AttentionGate">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">winter_inference.</span></span><span class="sig-name descname"><span class="pre">AttentionGate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nn.Module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.AttentionGate" title="Link to this definition">¶</a></dt>
+<dd><p>Weight encoder skip features using decoder context.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="winter_inference.AttentionGate.__init__">
+<span class="sig-prename descclassname"><span class="pre">AttentionGate.</span></span><span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ic</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.AttentionGate.__init__" title="Link to this definition">¶</a></dt>
+<dd><p>Construct context projections and scalar spatial attention.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>gc</strong> – int; positive context channels.</p></li>
+<li><p><strong>sc</strong> – int; positive encoder channels.</p></li>
+<li><p><strong>ic</strong> – int; positive intermediate channels.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="winter_inference.AttentionGate.forward">
+<span class="sig-prename descclassname"><span class="pre">AttentionGate.</span></span><span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">g</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.AttentionGate.forward" title="Link to this definition">¶</a></dt>
+<dd><p>Apply sigmoid attention while retaining the skip shape.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>g</strong> – torch.Tensor; [B, gate_channels, Hg, Wg] context.</p></li>
+<li><p><strong>s</strong> – torch.Tensor; [B, skip_channels, Hs, Ws] encoder features.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Weighted skip [B, skip_channels, Hs, Ws], not a</dt><dd><p>one-channel prediction.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>RuntimeError</strong> – If channels, batch dimensions or devices are incompatible.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="winter_inference.ASPP">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">winter_inference.</span></span><span class="sig-name descname"><span class="pre">ASPP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nn.Module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.ASPP" title="Link to this definition">¶</a></dt>
+<dd><p>Combine parallel convolutions at dilation rates 1, 2, 4 and 6.</p>
+<p>The rate-1 branch uses a 1x1 kernel. Projection fuses concatenated features; dropout
+is active only in training mode.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="winter_inference.ASPP.__init__">
+<span class="sig-prename descclassname"><span class="pre">ASPP.</span></span><span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ic</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oc</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.ASPP.__init__" title="Link to this definition">¶</a></dt>
+<dd><p>Construct four branches and a context projection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ic</strong> – int; positive input channels.</p></li>
+<li><p><strong>oc</strong> – int; output channels, at least 4; branch width is
+floor(output_channels/4).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="winter_inference.ASPP.forward">
+<span class="sig-prename descclassname"><span class="pre">ASPP.</span></span><span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.ASPP.forward" title="Link to this definition">¶</a></dt>
+<dd><p>Fuse multiscale features without changing the spatial grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> – torch.Tensor; [B, input_channels, H, W].</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>[B, output_channels, H, W] context features, not branch</dt><dd><p>logits.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>RuntimeError</strong> – If convolution or batch-normalisation input is
+incompatible.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="winter_inference.ImprovedUNet">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">winter_inference.</span></span><span class="sig-name descname"><span class="pre">ImprovedUNet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nn.Module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.ImprovedUNet" title="Link to this definition">¶</a></dt>
+<dd><p>Predict branch logits with a four-channel ResNet-34 U-Net.</p>
+<p>ASPP supplies multiscale context, attention weights skip features, and residual
+blocks fuse them. Layers match training checkpoint keys; construction uses
+weights=None.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="winter_inference.ImprovedUNet.__init__">
+<span class="sig-prename descclassname"><span class="pre">ImprovedUNet.</span></span><span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.ImprovedUNet.__init__" title="Link to this definition">¶</a></dt>
+<dd><p>Construct encoder and decoder layers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="winter_inference.ImprovedUNet.forward">
+<span class="sig-prename descclassname"><span class="pre">ImprovedUNet.</span></span><span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.ImprovedUNet.forward" title="Link to this definition">¶</a></dt>
+<dd><p>Decode RGB-D features into full-resolution branch logits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> – torch.Tensor; floating [B, 4, H, W] batch using training
+preprocessing.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Raw [B, 1, H, W] logits; sigmoid converts to</dt><dd><p>probabilities.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>RuntimeError</strong> – If channels, spatial size or dtype/device is incompatible.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="winter_inference.load_checkpoint">
+<span class="sig-prename descclassname"><span class="pre">winter_inference.</span></span><span class="sig-name descname"><span class="pre">load_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.load_checkpoint" title="Link to this definition">¶</a></dt>
+<dd><p>Load matching parameters strictly and select evaluation mode.</p>
+<p>Loads on CPU with weights_only=False before transfer. Checkpoints must be trusted
+because pickle deserialisation can execute payloads.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – torch.nn.Module with matching state keys.</p></li>
+<li><p><strong>path</strong> – str or pathlib.Path to a trusted local PyTorch checkpoint.</p></li>
+<li><p><strong>device</strong> – torch.device for the returned model.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Device-mapped eval model and original</dt><dd><p>checkpoint; accepts model_state_dict or a bare state dictionary.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[torch.nn.Module, dict]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>OSError</strong> – If reading fails.</p></li>
+<li><p><strong>RuntimeError</strong> – If strict loading or device transfer fails.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="winter_inference.save_outputs">
+<span class="sig-prename descclassname"><span class="pre">winter_inference.</span></span><span class="sig-name descname"><span class="pre">save_outputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rgbim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">depthim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outdir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stem</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.save_outputs" title="Link to this definition">¶</a></dt>
+<dd><p>Save a prediction, orange overlay and four-panel comparison.</p>
+<p>Suffixes are _pred_mask.png, _overlay.png and _comparison.png. No GT or quantitative
+segmentation accuracy is produced.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rgbim</strong> – PIL.Image.Image; preprocessed RGB.</p></li>
+<li><p><strong>depthim</strong> – PIL.Image.Image; same-size L-mode depth.</p></li>
+<li><p><strong>mask</strong> – PIL.Image.Image; same-size L-mode binary prediction, 0/255.</p></li>
+<li><p><strong>outdir</strong> – pathlib.Path; created if needed.</p></li>
+<li><p><strong>stem</strong> – str; filesystem-safe basename without extension.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>OSError</strong> – If directory creation or PNG writing fails.</p></li>
+<li><p><strong>ValueError</strong> – If arrays have incompatible dimensions.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="winter_inference.sync">
+<span class="sig-prename descclassname"><span class="pre">winter_inference.</span></span><span class="sig-name descname"><span class="pre">sync</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.sync" title="Link to this definition">¶</a></dt>
+<dd><p>Finish CUDA kernels before wall-clock timing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>device</strong> – torch.device; CPU does nothing, CUDA synchronises that device.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>RuntimeError</strong> – If CUDA synchronisation fails.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="winter_inference.benchmark">
+<span class="sig-prename descclassname"><span class="pre">winter_inference.</span></span><span class="sig-name descname"><span class="pre">benchmark</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outroot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.benchmark" title="Link to this definition">¶</a></dt>
+<dd><p>Measure model-only latency and export winter predictions.</p>
+<p>Caller sets eval mode; inference_mode disables gradients. Timing excludes
+preprocessing, transfer, sigmoid, thresholding and saving. Sample standard deviation
+uses ddof=1 for at least two images; absent means are None.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – torch.nn.Module; eval model on device mapping RGB-D to branch logits.</p></li>
+<li><p><strong>samples</strong> – list[dict] from discover.</p></li>
+<li><p><strong>name</strong> – str; model label and output subdirectory.</p></li>
+<li><p><strong>outroot</strong> – pathlib.Path; root output directory.</p></li>
+<li><p><strong>device</strong> – torch.device matching model parameters.</p></li>
+<li><p><strong>size</strong> – int; positive input side matching training geometry.</p></li>
+<li><p><strong>threshold</strong> – float in [0, 1]; inclusive sigmoid cutoff.</p></li>
+<li><p><strong>warmup</strong> – int; nonnegative untimed first-sample forward passes.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Per-image timings and summary in milliseconds;</dt><dd><p>throughput is model-only images/second.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[list[dict], dict]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>OSError</strong> – If input reading or prediction saving fails.</p></li>
+<li><p><strong>RuntimeError</strong> – If inference or synchronisation fails.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="winter_inference.main">
+<span class="sig-prename descclassname"><span class="pre">winter_inference.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#winter_inference.main" title="Link to this definition">¶</a></dt>
+<dd><p>Load three checkpoints and benchmark paired winter images.</p>
+<p>Requires –data-root and –mlp-checkpoint, –unet-checkpoint, –improved-checkpoint.
+Saves per_image_timings.csv, summary.csv, benchmark_metadata.json and model-specific
+images. Input size comes from CLI, not checkpoint metadata. Requires no GT.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>SystemExit</strong> – If required CLI arguments are missing or –help is requested.</p></li>
+<li><p><strong>FileNotFoundError</strong> – If a required path is absent.</p></li>
+<li><p><strong>RuntimeError</strong> – If pairing, loading or inference fails.</p></li>
+<li><p><strong>OSError</strong> – If inputs/outputs cannot be accessed.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Apple Tree Localiser — MMA3001</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Project documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../workflows.html">Apple workflows and environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data_and_preprocessing.html">Data and preprocessing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../models.html">Model architectures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../training_and_evaluation.html">Training and evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Source API reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="apple_predictor_v1.html">apple_predictor_v1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apple_segmenter_train.html">apple_segmenter_train</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apple_segmenter_v1.html">apple_segmenter_v1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="compare_apple_detectors.html">compare_apple_detectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dataset_organiser.html">dataset_organiser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="full_grid_search_apple.html">full_grid_search_apple</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preprocess_roboflow_dataset.html">preprocess_roboflow_dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="train_baseline.html">train_baseline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="train_improved_unet.html">train_improved_unet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="train_unet.html">train_unet</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">winter_inference</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Source API reference</a><ul>
+      <li>Previous: <a href="train_unet.html" title="previous chapter">train_unet</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2026, Chan Lik Wai.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/api/winter_inference.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

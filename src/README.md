@@ -70,3 +70,32 @@ Branch dilation, branch-overlap settings and RF-DETR reference predictions remai
 - [HTML Documentation](../docs/html/index.html) — Generated source-code API documentation.
 
 **Note:** Dataset organisation and RF-DETR training/preparation scripts may perform file operations or configuration checks when imported. Run them as standalone scripts rather than importing them as passive utilities.
+## Full grid-search command-line options
+
+Run `conda run -n mma3001 python src/full_grid_search_apple.py --help`.
+The maintained optimiser is `full_grid_search_apple.py`; the former one-factor
+optimiser is absent from this checkout.
+
+| Option | Default / accepted values |
+|---|---|
+| `--predictor` | `src/apple_predictor_v1.py` |
+| `--comparison` | `src/compare_apple_detectors.py` |
+| `--reference-dir` | `outputs/apple_rfdetr_instances` (counts and instances CSVs) |
+| `--output-dir` | `outputs/apple_grid_search` |
+| `--max-distance` | 30.0 original-image pixels, inclusive |
+| `--select-by` | `f1` (default), `precision`, `recall`, `mae`, `rmse`, `centroid`, `bbox_iou`, `count_bias` |
+| `--split` | `by-tree` (default), `all` |
+| `--max-runs` | No limit; stop after this many newly completed combinations |
+| `--no-cache` | Reload images each configuration instead of retaining them in RAM |
+
+The grid has 5,184 combinations. Resume validates metadata and skips recorded run
+IDs; partial rankings are not exhaustive results. Source edits change hashes.
+The selection objective is not recorded in resume metadata: an existing held-out
+CSV is reused even after `--select-by` changes. Use separate output directories.
+Neither `--max-runs` nor `--no-cache` removes the real-data requirement.
+
+## Software unit tests
+
+Run `conda run -n mma3001 python -m unittest discover -s test -p "test_*.py" -v`
+from the repository root. See [test coverage and limitations](../test/README.md).
+Winter inference is a maintained source workflow, not a unit test.

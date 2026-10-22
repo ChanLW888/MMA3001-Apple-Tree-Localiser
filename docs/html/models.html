@@ -54,7 +54,7 @@
 </ul>
 <p>All models output logits. Sigmoid is applied for thresholded validation and displays; BCE-with-logits consumes raw scores directly. Intermediate convolution, ASPP and decoder outputs retain their configured feature channels rather than becoming branch predictions.</p>
 <p>The extended trainer also uses paired horizontal/vertical flips and RGB brightness/contrast perturbation after normalisation. Depth is not colour-jittered. Optimiser/loss differences are detailed in <a class="reference internal" href="training_and_evaluation.html"><span class="std std-doc">training and evaluation</span></a>. These changes express design intent, not verified performance improvement.</p>
-<p><code class="docutils literal notranslate"><span class="pre">test/winter_inference.py</span></code> reconstructs matching model structures/state keys with torchvision weights=None and strictly loads local checkpoints. It requires compatible architectures and trusted checkpoint files; it is not a general checkpoint converter.</p>
+<p><code class="docutils literal notranslate"><span class="pre">src/winter_inference.py</span></code> reconstructs matching model structures/state keys with torchvision weights=None and strictly loads local checkpoints. It requires compatible architectures and trusted checkpoint files; it is not a general checkpoint converter.</p>
 </section>
 </section>
 

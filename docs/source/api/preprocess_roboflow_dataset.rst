@@ -24,19 +24,19 @@ python src/preprocess_roboflow_dataset.py
 .. py:function:: process_split(source_dir, annotation_file, output_dir)
 
    Copy a COCO split and merge apple-* categories into class 1.
-   
+
    Keeps all images, including negative examples, and preserves segmentation geometry.
    Missing image records remain in COCO despite skipped copies; check output
    completeness separately. Reassigns annotation IDs sequentially.
-   
+
    :param source_dir: pathlib.Path containing images.
    :param annotation_file: str or pathlib.Path; COCO JSON with images, annotations and
                            categories.
    :param output_dir: pathlib.Path; split destination created if needed.
-   
+
    :returns: images, apple_instances, copied_images and missing_images.
    :rtype: dict[str, int]
-   
+
    :raises RuntimeError: If no category starts with apple- (case-insensitive).
    :raises json.JSONDecodeError: If annotation JSON is invalid.
    :raises KeyError: If required category/image fields are absent.
@@ -45,12 +45,12 @@ python src/preprocess_roboflow_dataset.py
 .. py:function:: main()
 
    Prepare train and valid apple-only COCO splits and print counts.
-   
+
    Maps source train to train and export to valid. Module-level checks require source
    paths even on import.
-   
+
    :returns: None.
-   
+
    :raises RuntimeError: If no apple-* categories exist.
    :raises OSError: If annotation reading, copying or writing fails.
    :raises json.JSONDecodeError: If JSON is malformed.

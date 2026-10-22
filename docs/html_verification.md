@@ -1,199 +1,71 @@
-# Documentation and licence verification ? 22 October 2026
+# Final documentation and preservation verification
 
-Both Sphinx 9.1.0 builds succeeded with `-E -a -W --keep-going`; MyST 5.1.0 and Sphinx Napoleon were used from the existing mma3001 environment. No dependency was installed. The first build flagged an index title underline; that documentation issue was corrected and both final builds passed.
+Verified against a byte-hash/source snapshot captured from the working tree before edits.
+The pre-existing deletion of `src/optimise_apple_predictor.py` was preserved.
 
-- Source coverage: all 11 src/*.py modules; static AST extraction only. Existing classes, functions, methods, nested helpers and their docstrings/signatures are included. Imported/inherited/dynamic APIs and runtime behaviour are not verified. Missing prose is explicitly labelled.
-- HTML exists at docs/_build/html/index.html and docs/html/index.html. Each output contains 22 HTML pages. Each passed 1,050 local href/src target and fragment-anchor checks, with zero errors. Remote URLs were not checked.
-- docs/_build/ is ignored. docs/html/ is not ignored and contains the complete submission site. Keep its assets and pages together.
-- Root LICENSE exists and contains the standard MIT text, copyright 2026 Chan Lik Wai. README limits it to original author-owned code; external datasets/code/weights retain their own terms. No existing project licence or explicit conflicting source notice was found. Third-party redistribution rights remain unverified.
-- Root README and docs/README.md contain exact build and local viewing instructions. Incorrect .yaml links were corrected to the existing .yml filenames; neither environment export was edited.
-- Initial Git status was clean. No existing Python file, including docs/source/conf.py, was edited. git diff --name-only -- '*.py' '*.yml' '*.yaml' is empty. Only a new documentation configuration, docs/static_config/conf.py, was added.
-- A SHA-256 snapshot of 17,104 existing non-documentation files was compared after building. 17,103 were identical, including existing Python sources, both Conda exports, datasets and checkpoints. ONE EXCEPTION: outputs/apple_grid_search/all_experiments.csv changed during the task. No command in this task wrote this file or ran training, inference or grid search. Its cause was not established; the file was left untouched. Therefore a blanket assertion that all result files remained unchanged cannot be made. The initial snapshot is retained locally at docs/_build/preservation-baseline.json (ignored).
-- No program tests were executed, because documentation parsing/building/link checks suffice without risking application side effects. No commit or push was performed.
+## Source audit
 
-## Complete changed/new file inventory
+| Module | Functions/classes | Missing docstrings | AST unchanged |
+|---|---:|---:|---|
+| `src/apple_predictor_v1.py` | 16 | 0 | Yes |
+| `src/apple_segmenter_train.py` | 1 | 0 | Yes |
+| `src/apple_segmenter_v1.py` | 9 | 0 | Yes |
+| `src/compare_apple_detectors.py` | 10 | 0 | Yes |
+| `src/dataset_organiser.py` | 1 | 0 | Yes |
+| `src/full_grid_search_apple.py` | 13 | 0 | Yes |
+| `src/preprocess_roboflow_dataset.py` | 2 | 0 | Yes |
+| `src/train_baseline.py` | 18 | 0 | Yes |
+| `src/train_improved_unet.py` | 29 | 0 | Yes |
+| `src/train_unet.py` | 19 | 0 | Yes |
+| `src/winter_inference.py` | 32 | 0 | Yes |
 
-The following inventory combines git diff --name-only and git ls-files --others --exclude-standard, plus generated ignored files under docs/_build/. The latter includes the preserved hash snapshot and build caches. The results CSV exception above is ignored by Git and is not a documentation change made by this task.
+All 11 source modules compiled in memory without importing them. Executable ASTs
+and non-docstring/non-comment tokens match the initial working tree.
 
-```text
-LICENSE
-README.md
-docs/README.md
-docs/_build/html/.buildinfo
-docs/_build/html/.doctrees/api/apple_predictor_v1.doctree
-docs/_build/html/.doctrees/api/apple_segmenter_train.doctree
-docs/_build/html/.doctrees/api/apple_segmenter_v1.doctree
-docs/_build/html/.doctrees/api/compare_apple_detectors.doctree
-docs/_build/html/.doctrees/api/dataset_organiser.doctree
-docs/_build/html/.doctrees/api/full_grid_search_apple.doctree
-docs/_build/html/.doctrees/api/index.doctree
-docs/_build/html/.doctrees/api/optimise_apple_predictor.doctree
-docs/_build/html/.doctrees/api/preprocess_roboflow_dataset.doctree
-docs/_build/html/.doctrees/api/train_baseline.doctree
-docs/_build/html/.doctrees/api/train_improved_unet.doctree
-docs/_build/html/.doctrees/api/train_unet.doctree
-docs/_build/html/.doctrees/data_and_preprocessing.doctree
-docs/_build/html/.doctrees/environment.pickle
-docs/_build/html/.doctrees/index.doctree
-docs/_build/html/.doctrees/models.doctree
-docs/_build/html/.doctrees/overview.doctree
-docs/_build/html/.doctrees/training_and_evaluation.doctree
-docs/_build/html/.doctrees/usage.doctree
-docs/_build/html/.doctrees/workflows.doctree
-docs/_build/html/_sources/api/apple_predictor_v1.rst.txt
-docs/_build/html/_sources/api/apple_segmenter_train.rst.txt
-docs/_build/html/_sources/api/apple_segmenter_v1.rst.txt
-docs/_build/html/_sources/api/compare_apple_detectors.rst.txt
-docs/_build/html/_sources/api/dataset_organiser.rst.txt
-docs/_build/html/_sources/api/full_grid_search_apple.rst.txt
-docs/_build/html/_sources/api/index.rst.txt
-docs/_build/html/_sources/api/optimise_apple_predictor.rst.txt
-docs/_build/html/_sources/api/preprocess_roboflow_dataset.rst.txt
-docs/_build/html/_sources/api/train_baseline.rst.txt
-docs/_build/html/_sources/api/train_improved_unet.rst.txt
-docs/_build/html/_sources/api/train_unet.rst.txt
-docs/_build/html/_sources/data_and_preprocessing.md.txt
-docs/_build/html/_sources/index.rst.txt
-docs/_build/html/_sources/models.md.txt
-docs/_build/html/_sources/overview.md.txt
-docs/_build/html/_sources/training_and_evaluation.md.txt
-docs/_build/html/_sources/usage.md.txt
-docs/_build/html/_sources/workflows.md.txt
-docs/_build/html/_static/alabaster.css
-docs/_build/html/_static/base-stemmer.js
-docs/_build/html/_static/basic.css
-docs/_build/html/_static/custom.css
-docs/_build/html/_static/doctools.js
-docs/_build/html/_static/documentation_options.js
-docs/_build/html/_static/english-stemmer.js
-docs/_build/html/_static/file.png
-docs/_build/html/_static/github-banner.svg
-docs/_build/html/_static/language_data.js
-docs/_build/html/_static/minus.png
-docs/_build/html/_static/plus.png
-docs/_build/html/_static/pygments.css
-docs/_build/html/_static/searchtools.js
-docs/_build/html/_static/sphinx_highlight.js
-docs/_build/html/api/apple_predictor_v1.html
-docs/_build/html/api/apple_segmenter_train.html
-docs/_build/html/api/apple_segmenter_v1.html
-docs/_build/html/api/compare_apple_detectors.html
-docs/_build/html/api/dataset_organiser.html
-docs/_build/html/api/full_grid_search_apple.html
-docs/_build/html/api/index.html
-docs/_build/html/api/optimise_apple_predictor.html
-docs/_build/html/api/preprocess_roboflow_dataset.html
-docs/_build/html/api/train_baseline.html
-docs/_build/html/api/train_improved_unet.html
-docs/_build/html/api/train_unet.html
-docs/_build/html/data_and_preprocessing.html
-docs/_build/html/genindex.html
-docs/_build/html/index.html
-docs/_build/html/models.html
-docs/_build/html/objects.inv
-docs/_build/html/overview.html
-docs/_build/html/py-modindex.html
-docs/_build/html/search.html
-docs/_build/html/searchindex.js
-docs/_build/html/training_and_evaluation.html
-docs/_build/html/usage.html
-docs/_build/html/workflows.html
-docs/_build/preservation-baseline.json
-docs/_build/submission-doctrees/api/apple_predictor_v1.doctree
-docs/_build/submission-doctrees/api/apple_segmenter_train.doctree
-docs/_build/submission-doctrees/api/apple_segmenter_v1.doctree
-docs/_build/submission-doctrees/api/compare_apple_detectors.doctree
-docs/_build/submission-doctrees/api/dataset_organiser.doctree
-docs/_build/submission-doctrees/api/full_grid_search_apple.doctree
-docs/_build/submission-doctrees/api/index.doctree
-docs/_build/submission-doctrees/api/optimise_apple_predictor.doctree
-docs/_build/submission-doctrees/api/preprocess_roboflow_dataset.doctree
-docs/_build/submission-doctrees/api/train_baseline.doctree
-docs/_build/submission-doctrees/api/train_improved_unet.doctree
-docs/_build/submission-doctrees/api/train_unet.doctree
-docs/_build/submission-doctrees/data_and_preprocessing.doctree
-docs/_build/submission-doctrees/environment.pickle
-docs/_build/submission-doctrees/index.doctree
-docs/_build/submission-doctrees/models.doctree
-docs/_build/submission-doctrees/overview.doctree
-docs/_build/submission-doctrees/training_and_evaluation.doctree
-docs/_build/submission-doctrees/usage.doctree
-docs/_build/submission-doctrees/workflows.doctree
-docs/changed_files.txt
-docs/html/.buildinfo
-docs/html/_sources/api/apple_predictor_v1.rst.txt
-docs/html/_sources/api/apple_segmenter_train.rst.txt
-docs/html/_sources/api/apple_segmenter_v1.rst.txt
-docs/html/_sources/api/compare_apple_detectors.rst.txt
-docs/html/_sources/api/dataset_organiser.rst.txt
-docs/html/_sources/api/full_grid_search_apple.rst.txt
-docs/html/_sources/api/index.rst.txt
-docs/html/_sources/api/optimise_apple_predictor.rst.txt
-docs/html/_sources/api/preprocess_roboflow_dataset.rst.txt
-docs/html/_sources/api/train_baseline.rst.txt
-docs/html/_sources/api/train_improved_unet.rst.txt
-docs/html/_sources/api/train_unet.rst.txt
-docs/html/_sources/data_and_preprocessing.md.txt
-docs/html/_sources/index.rst.txt
-docs/html/_sources/models.md.txt
-docs/html/_sources/overview.md.txt
-docs/html/_sources/training_and_evaluation.md.txt
-docs/html/_sources/usage.md.txt
-docs/html/_sources/workflows.md.txt
-docs/html/_static/alabaster.css
-docs/html/_static/base-stemmer.js
-docs/html/_static/basic.css
-docs/html/_static/custom.css
-docs/html/_static/doctools.js
-docs/html/_static/documentation_options.js
-docs/html/_static/english-stemmer.js
-docs/html/_static/file.png
-docs/html/_static/github-banner.svg
-docs/html/_static/language_data.js
-docs/html/_static/minus.png
-docs/html/_static/plus.png
-docs/html/_static/pygments.css
-docs/html/_static/searchtools.js
-docs/html/_static/sphinx_highlight.js
-docs/html/api/apple_predictor_v1.html
-docs/html/api/apple_segmenter_train.html
-docs/html/api/apple_segmenter_v1.html
-docs/html/api/compare_apple_detectors.html
-docs/html/api/dataset_organiser.html
-docs/html/api/full_grid_search_apple.html
-docs/html/api/index.html
-docs/html/api/optimise_apple_predictor.html
-docs/html/api/preprocess_roboflow_dataset.html
-docs/html/api/train_baseline.html
-docs/html/api/train_improved_unet.html
-docs/html/api/train_unet.html
-docs/html/data_and_preprocessing.html
-docs/html/genindex.html
-docs/html/index.html
-docs/html/models.html
-docs/html/objects.inv
-docs/html/overview.html
-docs/html/py-modindex.html
-docs/html/search.html
-docs/html/searchindex.js
-docs/html/training_and_evaluation.html
-docs/html/usage.html
-docs/html/workflows.html
-docs/html_verification.md
-docs/source/api/apple_predictor_v1.rst
-docs/source/api/apple_segmenter_train.rst
-docs/source/api/apple_segmenter_v1.rst
-docs/source/api/compare_apple_detectors.rst
-docs/source/api/dataset_organiser.rst
-docs/source/api/full_grid_search_apple.rst
-docs/source/api/index.rst
-docs/source/api/optimise_apple_predictor.rst
-docs/source/api/preprocess_roboflow_dataset.rst
-docs/source/api/train_baseline.rst
-docs/source/api/train_improved_unet.rst
-docs/source/api/train_unet.rst
-docs/source/index.rst
-docs/source/usage.md
-docs/source/workflows.md
-docs/static_config/conf.py
-```
+## Protected files
+
+16991 snapshotted data/output/environment files retain their original SHA-256 hashes.
+Only `outputs/README.md` was intentionally edited under outputs. Neither Conda YAML was changed.
+Externally observed changes during this session: ['outputs\\apple_grid_search\\all_experiments.csv'].
+No task command wrote experimental results; changed files were left untouched.
+Cannot certify unchanged experimental results while external writes occur.
+
+## HTML verification
+
+22 HTML pages checked; 1105 local links/assets/anchors resolved.
+Every maintained source module has an API page with documented signatures.
+Navigation and required assets are local and available for offline file opening.
+No graphical browser or interactive search behaviour was tested.
+Sphinx 9.1.0 strict rebuild (`-E -a -W --keep-going`) succeeded without warnings.
+
+## README links
+
+Checked 34 local README file links.
+Unresolved README links: []
+
+## Software verification
+
+40 tests passed; 0 failed, 0 errored, 0 skipped in the existing mma3001 environment.
+See [actual execution output](../test/test_report.txt). No packages installed or changed.
+This does not measure real-world model accuracy. The known stale held-out reuse
+in full_grid_search_apple.main is reproduced and documented, not fixed.
+
+No training, RF-DETR inference, full-dataset optimisation, commit or push occurred.
+
+## Documentation changes
+
+Completed Google-style docstrings in `full_grid_search_apple.py` for
+`load_module`, `file_hash`, `tree_partition`, `combinations`, `append_row`,
+`load_rows`, `numeric`, `score`, `select_best`, `evaluate_configuration`, `main`,
+and the nested `load_one` and `get_frames` helpers. Other source modules already
+had docstrings for all discovered functions/classes; they were left unchanged.
+
+Updated the root, source, output and documentation READMEs and three Sphinx guides.
+Added the independent test suite, fixtures, report runner, test README and real report.
+Regenerated API RST/HTML, including winter inference, and removed stale generated
+pages for the already absent optimiser. The build configuration now avoids emitting
+whitespace-only lines in generated API RST. `git diff --check` passed.
+
+The comparison script's generated report still embeds historical `treeid` commands
+and fixed historical prose. Those strings are executable statements and were left
+unchanged; use the current README commands and independently verify report claims.

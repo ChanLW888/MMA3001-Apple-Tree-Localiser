@@ -24,18 +24,18 @@ From repository root: python src/dataset_organiser.py
 .. py:function:: read_png(filename)
 
    Decode basic 8-bit grayscale or RGB PNG scanlines.
-   
+
    Reverses PNG filters modulo 256, including Paeth. Does not validate signature, CRC
    or interlace method; this is a minimal checker, not a general PNG validator.
-   
+
    :param filename: str or os.PathLike; non-interlaced PNG, colour type 0 or 2.
-   
+
    :returns:
-   
+
              Width, height, channels (1 or 3) and flat
                  row-major interleaved bytes in [0, 255].
    :rtype: tuple[int, int, int, list[int]]
-   
+
    :raises ValueError: If bit depth, colour type or row filter is unsupported.
    :raises OSError: If reading fails.
    :raises zlib.error: If compressed data is invalid.

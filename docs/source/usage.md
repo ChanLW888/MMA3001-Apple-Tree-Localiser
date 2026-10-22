@@ -25,7 +25,7 @@ python src/train_improved_unet.py --data-root data/Organised
 With checkpoints from the default branch training locations:
 
 ```powershell
-python test/winter_inference.py --data-root data/Organised --mlp-checkpoint outputs/pixel_mlp_crop_trainval/pixel_mlp_best.pth --unet-checkpoint outputs/resnet34_unet_crop_trainval_output/resnet34_unet_best.pth --improved-checkpoint outputs/improved_resnet34_unet_output/improved_resnet34_unet_best.pth
+python src/winter_inference.py --data-root data/Organised --mlp-checkpoint outputs/pixel_mlp_crop_trainval/pixel_mlp_best.pth --unet-checkpoint outputs/resnet34_unet_crop_trainval_output/resnet34_unet_best.pth --improved-checkpoint outputs/improved_resnet34_unet_output/improved_resnet34_unet_best.pth
 ```
 
 These are expected generated paths, not files distributed with Git. Override paths for historical/custom runs. Checkpoints must be trusted and architecture-compatible. Supply `--input-size` explicitly when it differs from 256; geometry is not inferred from checkpoint metadata. `--threshold` defaults to 0.5, `--warmup` to 5. Output masks and model-only timing do not measure winter accuracy without GT.

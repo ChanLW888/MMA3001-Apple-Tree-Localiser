@@ -7,8 +7,8 @@ This directory contains generated model checkpoints, predictions, annotations, e
 | Script | Output directory | Best checkpoint |
 |---|---|---|
 | `src/train_baseline.py` | `outputs/pixel_mlp_crop_trainval/` | `pixel_mlp_best.pth` |
-| `src/train_unet.py` | `outputs/resnet34_unet_crop_trainval/` | `resnet34_unet_best.pth` |
-| `src/train_improved_unet.py` | `outputs/improved_resnet34_unet/` | `improved_resnet34_unet_best.pth` |
+| `src/train_unet.py` | `outputs/resnet34_unet_crop_trainval_output/` | `resnet34_unet_best.pth` |
+| `src/train_improved_unet.py` | `outputs/improved_resnet34_unet_output/` | `improved_resnet34_unet_best.pth` |
 
 Each training directory contains:
 
@@ -19,7 +19,7 @@ Each training directory contains:
 
 ## 2. Winter Branch Inference
 
-**Script:** `test/winter_inference.py`
+**Script:** `src/winter_inference.py`
 
 **Output:** `outputs/winter_inference_benchmark/`
 
@@ -154,3 +154,25 @@ The optimisation varies colour thresholds, component-area limits, circularity, a
 - Generated CSV files may be overwritten when scripts are rerun.
 - Model checkpoints, datasets and generated results are maintained locally unless explicitly committed.
 - RF-DETR comparison metrics measure agreement with pseudo-ground truth, not absolute apple-detection accuracy.
+
+### Grid persistence and interpretation
+
+`all_experiments.csv` appends one completed configuration with its run ID, split,
+seven varied parameter values and computed metrics. `best_by_metric.csv` contains
+one winner for each of eight objectives; `metric_rankings.csv` ranks completed rows
+for every objective. Both are rewritten on resume and can describe partial searches.
+Metrics cover reference-relative precision, recall and F1, counting errors, count
+agreement and conditional localisation agreement (centroid pixels and box IoU).
+
+`heldout_comparison.csv` is created only after all combinations complete in
+`--split by-tree` mode and only if the file does not already exist. It contains
+baseline and selected rows for held-out trees. `--split all` does not create it.
+`grid_metadata.json` checks the grid, baseline, fixed branch constants, threshold,
+split, source/reference hashes, development-name hash and split sizes before resume.
+It does not fingerprint image contents or record the selection objective.
+
+**Known issue:** changing `--select-by` can leave an incompatible held-out CSV in
+place. Use a fresh `--output-dir` per objective and preserve historical results.
+Documentation edits also change source hashes. No historical results were rerun
+for the software tests; their actual execution report is in
+[test/test_report.txt](../test/test_report.txt).

@@ -33,7 +33,7 @@ def members(nodes, prefix=''):
                 if node.returns:
                     signature += ' -> ' + ast.unparse(node.returns)
             lines += [f'.. py:{kind}:: {name}{signature}', '']
-            lines += ['   ' + line for line in prose(node).splitlines()] + ['']
+            lines += ['   ' + line if line.strip() else '' for line in prose(node).splitlines()] + ['']
             lines += members(node.body, name + '.')
         else:
             for field in ('body', 'orelse', 'finalbody'):

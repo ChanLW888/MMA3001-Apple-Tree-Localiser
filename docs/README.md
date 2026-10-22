@@ -23,4 +23,9 @@ The landing page links preserved branch guides, the apple workflow/environment g
 
 The root MIT licence applies only to original author-owned project code, excluding university/Roboflow datasets, third-party weights, RF-DETR code/weights and other external materials. Their own terms apply.
 
-See [verification for this task](html_verification.md). The older `documentation_verification.md` describes a previous task and its historical checks, not the changes authorised or performed here.
+See [verification for this task](html_verification.md). See also the [software test report](../test/test_report.txt) and [test scope](../test/README.md).
+
+The maintained API inventory includes `winter_inference` and `full_grid_search_apple`.
+The absent former optimiser is excluded. The grid API documents every helper,
+selection direction, fixed branch settings, caching, resume fingerprints and the
+known stale held-out result issue. Unit checks do not validate model accuracy.

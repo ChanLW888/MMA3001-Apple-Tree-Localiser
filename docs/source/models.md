@@ -22,4 +22,4 @@ All models output logits. Sigmoid is applied for thresholded validation and disp
 
 The extended trainer also uses paired horizontal/vertical flips and RGB brightness/contrast perturbation after normalisation. Depth is not colour-jittered. Optimiser/loss differences are detailed in [training and evaluation](training_and_evaluation.md). These changes express design intent, not verified performance improvement.
 
-`test/winter_inference.py` reconstructs matching model structures/state keys with torchvision weights=None and strictly loads local checkpoints. It requires compatible architectures and trusted checkpoint files; it is not a general checkpoint converter.
+`src/winter_inference.py` reconstructs matching model structures/state keys with torchvision weights=None and strictly loads local checkpoints. It requires compatible architectures and trusted checkpoint files; it is not a general checkpoint converter.

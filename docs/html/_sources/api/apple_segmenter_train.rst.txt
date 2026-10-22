@@ -25,13 +25,13 @@ python src/apple_segmenter_train.py
 .. py:function:: main()
 
    Train RFDETRSegMedium on cleaned apple COCO splits.
-   
+
    Uses 50 epochs, batch size 1 and library defaults otherwise. Writes
    outputs/rfdetr_apple_tree. Module checks dataset paths at import. Construction may
    retrieve pretrained weights if uncached.
-   
+
    :returns: None.
-   
+
    :raises OSError: If data, pretrained weights or output cannot be accessed.
    :raises RuntimeError: If training fails.
 

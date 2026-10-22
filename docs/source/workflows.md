@@ -19,7 +19,7 @@ The two detector stacks need not coexist in one environment. Datasets and checkp
 - Traditional detection: [apple predictor](api/apple_predictor_v1.rst).
 - RF-DETR: [training](api/apple_segmenter_train.rst), [inference](api/apple_segmenter_v1.rst).
 - Saved-prediction [comparison](api/compare_apple_detectors.rst).
-- Parameter experiments: [one-factor sensitivity](api/optimise_apple_predictor.rst), [full grid search](api/full_grid_search_apple.rst).
+- Parameter experiments: [full grid search](api/full_grid_search_apple.rst).
 - Dataset utilities: [orchard organiser](api/dataset_organiser.rst), [COCO preprocessing](api/preprocess_roboflow_dataset.rst).
 
 Comparison reads saved predictions; parameter experiments execute detection when deliberately run. Documentation building only parses source text. No training, inference or experiment is needed to build this site.

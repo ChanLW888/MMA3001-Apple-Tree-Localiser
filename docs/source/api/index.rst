@@ -20,8 +20,8 @@ paths on import. Static extraction avoids these side effects for every module.
    compare_apple_detectors
    dataset_organiser
    full_grid_search_apple
-   optimise_apple_predictor
    preprocess_roboflow_dataset
    train_baseline
    train_improved_unet
    train_unet
+   winter_inference

@@ -1,0 +1,64 @@
+MMA3001 synthetic unit-test execution
+UTC: 2026-10-22T15:46:50.453956+00:00
+Interpreter: C:\Users\Chan\anaconda3\envs\mma3001\python.exe
+Environment: mma3001
+Command: python -m unittest discover -s test -p "test_*.py" -v
+
+test_beyond_distance (test_apple_comparison.ComparisonTests.test_beyond_distance) ... ok
+test_count_errors (test_apple_comparison.ComparisonTests.test_count_errors) ... ok
+test_counts_include_zero_and_validate_discrepancy (test_apple_comparison.ComparisonTests.test_counts_include_zero_and_validate_discrepancy) ... ok
+test_csv_round_trip_and_geometry_duplicates (test_apple_comparison.ComparisonTests.test_csv_round_trip_and_geometry_duplicates) ... ok
+test_duplicate_ids_rejected (test_apple_comparison.ComparisonTests.test_duplicate_ids_rejected) ... ok
+test_empty_detections_and_zero_image (test_apple_comparison.ComparisonTests.test_empty_detections_and_zero_image) ... ok
+test_exact_filename_matching (test_apple_comparison.ComparisonTests.test_exact_filename_matching) ... ok
+test_exact_match (test_apple_comparison.ComparisonTests.test_exact_match) ... ok
+test_inclusive_distance (test_apple_comparison.ComparisonTests.test_inclusive_distance) ... ok
+test_inclusive_iou (test_apple_comparison.ComparisonTests.test_inclusive_iou) ... ok
+test_invalid_detection_records (test_apple_comparison.ComparisonTests.test_invalid_detection_records) ... ok
+test_invalid_thresholds (test_apple_comparison.ComparisonTests.test_invalid_thresholds) ... ok
+test_maximum_cardinality_before_distance (test_apple_comparison.ComparisonTests.test_maximum_cardinality_before_distance) ... ok
+test_missing_csv_header (test_apple_comparison.ComparisonTests.test_missing_csv_header) ... ok
+test_one_to_one (test_apple_comparison.ComparisonTests.test_one_to_one) ... ok
+test_precision_recall_f1 (test_apple_comparison.ComparisonTests.test_precision_recall_f1) ... ok
+test_bbox (test_apple_detector.DetectorTests.test_bbox) ... ok
+test_branch_dilation (test_apple_detector.DetectorTests.test_branch_dilation) ... ok
+test_branch_rejection (test_apple_detector.DetectorTests.test_branch_rejection) ... ok
+test_centroid (test_apple_detector.DetectorTests.test_centroid) ... ok
+test_instance_csv_export_and_zero_count (test_apple_detector.DetectorTests.test_instance_csv_export_and_zero_count) ... ok
+test_invalid_depth (test_apple_detector.DetectorTests.test_invalid_depth) ... ok
+test_minimum_area_boundary (test_apple_detector.DetectorTests.test_minimum_area_boundary) ... ok
+test_morphology_closes_internal_hole (test_apple_detector.DetectorTests.test_morphology_closes_internal_hole) ... ok
+test_morphology_removes_isolated_noise (test_apple_detector.DetectorTests.test_morphology_removes_isolated_noise) ... ok
+test_red_dominance_and_non_red (test_apple_detector.DetectorTests.test_red_dominance_and_non_red) ... ok
+test_shape_validation (test_apple_detector.DetectorTests.test_shape_validation) ... ok
+test_zero_apples (test_apple_detector.DetectorTests.test_zero_apples) ... ok
+test_baseline_matches_actual_detector_and_occurs_once (test_grid_search.GridTests.test_baseline_matches_actual_detector_and_occurs_once) ... ok
+test_baseline_wins_tie (test_grid_search.GridTests.test_baseline_wins_tie) ... ok
+test_changed_objective_reuses_heldout_known_limitation (test_grid_search.GridTests.test_changed_objective_reuses_heldout_known_limitation)
+Reproduce stale held-out reuse with tiny mocked data and temporary files. ... ok
+test_configuration_evaluation_records_metrics_without_outputs (test_grid_search.GridTests.test_configuration_evaluation_records_metrics_without_outputs) ... ok
+test_full_cartesian_grid (test_grid_search.GridTests.test_full_cartesian_grid) ... ok
+test_invalid_numeric_scores_rank_last (test_grid_search.GridTests.test_invalid_numeric_scores_rank_last) ... ok
+test_missing_dynamic_module (test_grid_search.GridTests.test_missing_dynamic_module) ... ok
+test_objective_directions (test_grid_search.GridTests.test_objective_directions) ... ok
+test_only_traditional_parameters_vary (test_grid_search.GridTests.test_only_traditional_parameters_vary) ... ok
+test_result_persistence_schema_and_resume_ids (test_grid_search.GridTests.test_result_persistence_schema_and_resume_ids) ... ok
+test_tiny_cartesian_configuration (test_grid_search.GridTests.test_tiny_cartesian_configuration) ... ok
+test_tree_partition_is_grouped_and_deterministic (test_grid_search.GridTests.test_tree_partition_is_grouped_and_deterministic) ... ok
+
+----------------------------------------------------------------------
+Ran 40 tests in 0.061s
+
+OK
+
+Counts: 40 passed; 0 failed; 0 errored; 0 skipped.
+
+Process exit code: 0
+
+Verified: synthetic red/depth/branch filtering, morphology, component geometry,
+temporary exports, matching, hand-calculated metrics, CSV validation, actual
+5,184-configuration grid, objective directions, tree grouping and tiny mocked resume.
+Limitations: no dataset/model accuracy validation, checkpoints, GPU, training,
+RF-DETR inference or full optimisation. Known stale held-out reuse on changed
+selection objective is reproduced by an explicitly named characterization test,
+not fixed or certified safe. See test/README.md for details and other limits.

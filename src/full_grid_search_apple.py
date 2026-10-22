@@ -6,7 +6,8 @@ Run from the repository root: python src/full_grid_search_apple.py
 All 5,184 combinations are evaluated against the *existing* RF-DETR instance CSV.
 Only traditional colour/component/morphology constants vary. Branch-region
 constants, GT alignment, matching threshold and RF-DETR files are unchanged.
-A resume-safe all_experiments.csv is appended after each successful configuration.
+A resumable all_experiments.csv is appended after each successful configuration.
+See main for fingerprint coverage and the held-out objective-change limitation.
 By default tune on development trees, then compare the chosen model with the
 baseline on separate held-out trees. No annotated PNGs or per-run CSVs are made.
 """
@@ -55,6 +56,22 @@ SUMMARY_FIELDS = [
 
 
 def load_module(path, alias):
+    """Load a Python file under a supplied import alias.
+
+    Executes module-level statements and registers the module in sys.modules;
+    callers must use trusted, import-safe files.
+
+    Args:
+        path: pathlib.Path to a Python source file.
+        alias: str module name used in sys.modules.
+
+    Returns:
+        ModuleType: Executed module.
+
+    Raises:
+        FileNotFoundError: If path is not a file.
+        Exception: Exceptions raised by the imported module propagate.
+    """
     if not path.is_file():
         raise FileNotFoundError(path)
     spec = importlib.util.spec_from_file_location(alias, path)
@@ -65,22 +82,67 @@ def load_module(path, alias):
 
 
 def file_hash(path):
+    """Fingerprint a complete file for run provenance.
+
+    Args:
+        path: pathlib.Path to a readable file; bytes are read into memory.
+
+    Returns:
+        str: Hexadecimal SHA-256 digest.
+
+    Raises:
+        OSError: If reading fails.
+    """
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def tree_partition(filename):
+    """Assign every frame of one tree to the same deterministic split.
+
+    Args:
+        filename: str basename whose prefix before the first underscore is a
+            tree ID. No filename validation is performed.
+
+    Returns:
+        str: ``test`` when the SHA-256-derived fraction is below 0.2,
+        otherwise ``development``. The observed split need not be exactly 20%.
+    """
     tree = filename.split('_', 1)[0]
     fraction = int(hashlib.sha256(tree.encode()).hexdigest()[:12], 16) / 16**12
     return 'test' if fraction < 0.2 else 'development'
 
 
 def combinations():
+    """Enumerate the Cartesian product of the current module GRID.
+
+    Grid insertion order determines run IDs. The current seven parameter lists
+    produce 4 * 4 * 4 * 3 * 3 * 3 * 3 = 5,184 configurations. Branch dilation
+    and overlap are absent from the grid and remain fixed.
+
+    Yields:
+        tuple[str, dict]: Zero-based grid_NNNN ID and detector constants.
+        Each call produces new parameter dictionaries.
+    """
     keys = list(GRID)
     for index, values in enumerate(itertools.product(*(GRID[k] for k in keys))):
         yield f'grid_{index:04d}', dict(zip(keys, values))
 
 
 def append_row(path, row):
+    """Append one configuration and its metrics to the result CSV.
+
+    Args:
+        path: pathlib.Path; parent directory must exist.
+        row: dict with SUMMARY_FIELDS-compatible keys. Missing values are blank.
+            A header is written only when the file is empty.
+
+    Returns:
+        None.
+
+    Raises:
+        ValueError: If row contains unexpected columns.
+        OSError: If opening or writing fails.
+    """
     with path.open('a', encoding='utf-8', newline='') as stream:
         writer = csv.DictWriter(stream, fieldnames=SUMMARY_FIELDS)
         if stream.tell() == 0:
@@ -89,6 +151,19 @@ def append_row(path, row):
 
 
 def load_rows(path):
+    """Read resumable results and require the exact current column order.
+
+    Args:
+        path: pathlib.Path to all_experiments.csv.
+
+    Returns:
+        list[dict[str, str]]: Raw CSV rows, or an empty list for an absent file.
+        Run IDs and row values are not otherwise validated here.
+
+    Raises:
+        ValueError: If the header differs from SUMMARY_FIELDS.
+        OSError: If an existing file cannot be read.
+    """
     if not path.exists():
         return []
     with path.open(newline='', encoding='utf-8') as stream:
@@ -99,6 +174,17 @@ def load_rows(path):
 
 
 def numeric(row, key, maximize=True):
+    """Convert a metric into a score where larger is preferred.
+
+    Args:
+        row: Mapping of metric names to numeric values or numeric strings.
+        key: str metric column.
+        maximize: bool; negate finite values when False.
+
+    Returns:
+        float: Oriented score; negative infinity for absent, invalid or
+        nonfinite values, independent of optimisation direction.
+    """
     try:
         value = float(row[key])
         if not math.isfinite(value):
@@ -109,6 +195,25 @@ def numeric(row, key, maximize=True):
 
 
 def score(row, metric):
+    """Map a supported optimisation objective to a larger-is-better score.
+
+    Args:
+        row: Mapping containing evaluation metric columns.
+        metric: One of f1, precision, recall, mae, rmse, centroid, bbox_iou,
+            count_bias. Errors/distances are minimised, agreement maximised,
+            and signed bias minimised in absolute magnitude.
+
+    Returns:
+        float: Oriented score; most invalid metrics become negative infinity.
+
+    Raises:
+        KeyError: If metric is unknown or count_bias lacks its input column.
+        ValueError: If count_bias cannot be converted to float.
+        TypeError: If count_bias has an incompatible value type.
+
+    Note:
+        Unlike other objectives, count_bias does not reject nonfinite values.
+    """
     if metric == 'count_bias':
         return -abs(float(row['mean_signed_count_error']))
     mapping = {
@@ -126,12 +231,54 @@ def score(row, metric):
 
 def select_best(rows, criterion):
     # Prefer the exact baseline on tied scores.
+    """Select the best row with deterministic baseline tie preference.
+
+    Args:
+        rows: Nonempty sequence of result dictionaries with run_id, BASELINE
+            parameter columns and the requested metric.
+        criterion: str objective accepted by score.
+
+    Returns:
+        dict: Original winning row. Equal scores prefer exact baseline values,
+        then lexicographically smallest run_id.
+
+    Raises:
+        IndexError: If rows is empty.
+        KeyError: If an objective or required column is missing or unknown.
+        ValueError: If a parameter cannot be converted to float.
+        TypeError: If a numeric value has an incompatible type.
+    """
     return sorted(rows, key=lambda row: (-score(row, criterion),
                   0 if all(float(row[k]) == v for k, v in BASELINE.items()) else 1,
                   row['run_id']))[0]
 
 
 def evaluate_configuration(params, frames, names, predictor, comparator, reference, threshold):
+    """Evaluate cached synthetic or real frames without exporting images.
+
+    Mutates predictor constants in memory; this helper does not restore them.
+    The main search restores baseline constants in a finally block.
+
+    Args:
+        params: Mapping of detector constant names to parameter values.
+        frames: Iterable of (filename, info, rgb, depth, branch) tuples. RGB
+            has shape [H, W, 3]; aligned depth and branch masks have shape [H, W].
+            The info element is unused here.
+        names: Nonempty reusable collection of exact basenames to evaluate.
+        predictor: Module-like object exposing detector and instance_rows APIs.
+        comparator: Module-like object exposing evaluate.
+        reference: Mapping of basenames to saved RF-DETR instance records.
+        threshold: float inclusive centroid tolerance in original RGB pixels.
+
+    Returns:
+        tuple[dict, float]: Aggregate comparison metrics and elapsed seconds
+        for detection/instance conversion, excluding comparison evaluation.
+
+    Raises:
+        ValueError: If spatial shapes or comparison tolerance are invalid.
+        ZeroDivisionError: If names is empty.
+        KeyError: If candidate/export fields are missing.
+    """
     for name, value in params.items():
         setattr(predictor, name, value)  # no source-file writes
     predictions = {}
@@ -147,6 +294,46 @@ def evaluate_configuration(params, frames, names, predictor, comparator, referen
 
 
 def main():
+    """Run or resume traditional parameter tuning against saved RF-DETR results.
+
+    Reads command-line options through argparse; use --help for paths,
+    selection objectives, by-tree/all splits, caching and partial-run options.
+
+    Returns:
+        None. Appends all_experiments.csv and rewrites best_by_metric.csv and
+        metric_rankings.csv. Writes grid_metadata.json and, only after a complete
+        by-tree search, heldout_comparison.csv if that file does not already exist.
+
+    Raises:
+        ValueError: If baseline/fixed branch settings differ, common inputs or
+            partitions are empty, or resume metadata/CSV columns are incompatible.
+        FileNotFoundError: If configured source or reference files are missing.
+        OSError: If image/CSV reading or result writing fails.
+        SystemExit: For argparse help or invalid arguments.
+
+    Note:
+        Branch dilation is fixed at 100 pixels and minimum overlap at 0.05.
+        Complete traditional RGB/depth/GT triplets are intersected with reference
+        count basenames, preserving zero-count images. GT is stretched to RGB
+        geometry. Images are cached in RAM unless --no-cache reloads each run.
+        RF-DETR CSV predictions are pseudo-reference, never new inference.
+
+        Metrics include micro precision/recall/F1, image macro F1, signed and
+        absolute counting errors, RMSE, count agreement rates, conditional centroid
+        distances in pixels and inclusive-box IoU. By-tree mode tunes development
+        trees and evaluates only the selected configuration and baseline on test
+        trees; --split all provides no held-out estimate.
+
+        Resume checks grid, source/reference hashes and development-name hash,
+        then skips recorded run IDs. Image bytes, environment versions and test
+        names are not fully fingerprinted. Timing depends on machine/load. Source
+        docstring edits also change hashes and require a fresh output directory.
+
+        Known limitation: --select-by is not included in metadata, and an existing
+        heldout_comparison.csv is never refreshed. A changed objective can reuse
+        stale held-out results. Use a separate output directory per objective;
+        retain original results. Partial rankings are not exhaustive optima.
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--predictor', type=Path, default=ROOT/'src/apple_predictor_v1.py')
     parser.add_argument('--comparison', type=Path, default=ROOT/'src/compare_apple_detectors.py')
@@ -192,6 +379,21 @@ def main():
         raise ValueError('Development/test partition empty; use --split all or adjust split')
 
     def load_one(path, info):
+        """Load one aligned RGB/depth/branch frame for evaluation.
+
+            Args:
+                path: pathlib.Path to an RGB image.
+                info: dict with tree, season and time used to locate companions.
+
+            Returns:
+                tuple: Basename, info, RGB [H, W, 3], depth [H, W] and resized
+                branch GT [H, W]; depth retains stored units.
+
+            Raises:
+                ValueError: If RGB and depth dimensions differ.
+                OSError: If image decoding fails.
+                KeyError: If companion metadata is missing.
+        """
         rgb = predictor.load_rgb(path)
         depth_path, gt_path = predictor.get_matching_files(path, info)
         depth = predictor.load_depth(depth_path)
@@ -201,6 +403,18 @@ def main():
         return path.name, info, rgb, depth, branch
 
     def get_frames(target_split):
+        """Load all discovered frames belonging to a split.
+
+            Args:
+                target_split: str; development, test or all, matching groups.
+
+            Returns:
+                list[tuple]: Loaded frame tuples in discovery order; empty if none.
+
+            Raises:
+                ValueError: If a frame has inconsistent RGB/depth shapes.
+                OSError: If image reading fails.
+        """
         eligible = [(path, info) for path,info in raw_frames if groups[path.name] == target_split]
         return [load_one(path, info) for path,info in eligible]
 

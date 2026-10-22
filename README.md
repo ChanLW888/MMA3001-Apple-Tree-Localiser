@@ -11,8 +11,8 @@ The engineering objective is reproducible image-space apple candidates and branc
 | [environment.yml](environment.yml) | Exported `mma3001` Conda dependencies |
 | [rfdetr_environment.yml](rfdetr_environment.yml) | Exported `rfdetr` Conda dependencies |
 | [src/README.md](src/README.md) | Preparation, branch training, apple detection and comparison scripts |
-| [test/test_apple_evaluation.py](test/test_apple_evaluation.py) | Synthetic matching tests and data-dependent regression checks |
-| [test/winter_inference.py](test/winter_inference.py) | Qualitative branch predictions and forward-pass timing with three checkpoints |
+| [test/README.md](test/README.md) | Independent synthetic unit tests and actual execution report |
+| [src/winter_inference.py](src/winter_inference.py) | Qualitative branch predictions and forward-pass timing with three checkpoints |
 | [data/README.md](data/README.md) | Orchard PNG naming, organised layout and COCO split requirements |
 | [outputs/README.md](outputs/README.md) | Output directories, CSV conventions and interpretation |
 | [docs/README.md](docs/README.md) | Sphinx project guide, static source API and HTML build instructions |
@@ -78,41 +78,23 @@ These are checks to run, **not results already verified on a clean machine**. Co
 Run commands from the repository root. Input data must be obtained separately; this repository does not establish its redistribution rights or calibrated depth units.
 
 ```text
-
 data/
-
-  Dataset (With Summer GT)/          # flat organiser input
-
-  Organised/
-
-    Summer/
-
-      RGB/<tree>\_Summer_RGB-<time>.png
-
-      D/<tree>\_Summer_D-<time>.png
-
-      GT/<tree>\_Summer_GT-<time>.png
-
-    Winter/
-
-      RGB/<tree>\_Winter_RGB-<time>.png
-
-      D/<tree>\_Winter_D-<time>.png
-
-      GT/                           # may be empty
-
-  apple tree.v1i.coco-segmentation/
-
-    train/\_annotations.coco.json    # images alongside JSON
-
-    export/\_annotations.coco.json
-
-  apple_tree_clean/
-
-    train/\_annotations.coco.json
-
-    valid/\_annotations.coco.json
-
+  Dataset (With Summer GT)/       # flat organiser input
+  Organised/
+    Summer/
+      RGB/<tree>_Summer_RGB-<time>.png
+      D/<tree>_Summer_D-<time>.png
+      GT/<tree>_Summer_GT-<time>.png
+    Winter/
+      RGB/<tree>_Winter_RGB-<time>.png
+      D/<tree>_Winter_D-<time>.png
+      GT/                         # may be empty
+  apple tree.v1i.coco-segmentation/
+    train/_annotations.coco.json  # images alongside JSON
+    export/_annotations.coco.json
+  apple_tree_clean/
+    train/_annotations.coco.json
+    valid/_annotations.coco.json
 ```
 
 For example, `R10N12_Summer_RGB-13-36-51.png`, `R10N12_Summer_D-13-36-51.png` and `R10N12_Summer_GT-13-36-51.png` identify one frame. Apple scripts require the `R<digits>N<digits>` tree convention; the organiser accepts a broader tree token. Matching filenames do not prove spatial alignment.
@@ -122,17 +104,13 @@ Branch training centre-crops RGB/depth to a square and resizes to 256 pixels by 
 To organise flat orchard files (copies files and may overwrite destinations):
 
 ```powershell
-
 python src/dataset_organiser.py
-
 ```
 
 The organiser uses Windows-style relative paths and runs filesystem operations even if imported. RF-DETR COCO preparation is a separate workflow:
 
 ```powershell
-
 python src/preprocess_roboflow_dataset.py
-
 ```
 
 It merges category names beginning with `apple-` into class ID 1, retains negative images, maps `export` to `valid`, and preserves separate apple instances. Missing image copies leave COCO records behind, so inspect warnings before training. The presence of COCO files does not establish independently verified orchard evaluation annotations.
@@ -142,13 +120,9 @@ It merges category names beginning with `apple-` into class ID 1, retains negati
 The following commands train models; they are reproduction instructions, not actions executed for this documentation task:
 
 ```powershell
-
 python src/train_baseline.py --data-root data/Organised
-
 python src/train_unet.py --data-root data/Organised
-
 python src/train_improved_unet.py --data-root data/Organised
-
 ```
 
 Each accepts `--help`, `--output-dir`, `--input-size`, `--epochs`, `--batch-size`, `--seed`, `--val-fraction`, `--threshold` and other script-specific options. Use `--no-pretrained` for U-Nets when ImageNet initialisation is not desired. The MLP uses weighted BCE (positive weight 12) and Adam. Basic U-Net uses plain BCE and Adam. The extended U-Net adds ASPP, attention gates, residual decoding, paired flips and normalised-RGB jitter; it uses plain BCE, AdamW and a validation-Dice plateau scheduler.
@@ -158,9 +132,7 @@ All select the best checkpoint by validation Dice on a seeded shuffled summer sa
 For winter inference with checkpoints produced by the commands above:
 
 ```powershell
-
-python test/winter_inference.py --data-root data/Organised --mlp-checkpoint outputs/pixel_mlp_crop_trainval/pixel_mlp_best.pth --unet-checkpoint outputs/resnet34_unet_crop_trainval_output/resnet34_unet_best.pth --improved-checkpoint outputs/improved_resnet34_unet_output/improved_resnet34_unet_best.pth
-
+python src/winter_inference.py --data-root data/Organised --mlp-checkpoint outputs/pixel_mlp_crop_trainval/pixel_mlp_best.pth --unet-checkpoint outputs/resnet34_unet_crop_trainval_output/resnet34_unet_best.pth --improved-checkpoint outputs/improved_resnet34_unet_output/improved_resnet34_unet_best.pth
 ```
 
 These are expected output paths, not bundled checkpoint files. Supply the actual checkpoint locations if earlier runs used other directories. Use only trusted checkpoints. Keep `--input-size` and `--threshold` consistent with training; input size is not automatically inferred from checkpoints. Winter inference needs RGB-D pairs, not GT, and produces qualitative masks and model-only timings rather than winter accuracy metrics.
@@ -168,9 +140,7 @@ These are expected output paths, not bundled checkpoint files. Supply the actual
 ## Traditional apple detection
 
 ```powershell
-
 python src/apple_predictor_v1.py
-
 ```
 
 Configuration is through module constants, with summer defaults. Processing selects red-dominant pixels with depth >0, applies elliptical opening/closing, then filters connected components by area, aspect ratio, circularity and branch-zone overlap. Defaults include red >50, red dominance 1.5, area 30–5000 pixels, circularity >=0.20, aspect ratio <=2.5, morphology diameter 5, branch dilation diameter 100 and overlap >=0.05. The mean red score `R/(G+B+1)` is descriptive, not confidence and not an additional rejection threshold.
@@ -182,9 +152,7 @@ Branch GT is converted to grayscale, stretched over the full RGB grid using near
 With a previously trained checkpoint at `outputs/rfdetr_apple_tree/checkpoint_best_total.pth`:
 
 ```powershell
-
 python src/apple_segmenter_v1.py
-
 ```
 
 The script loads `RFDETRSegMedium`, applies confidence >=0.20, instance mask >0.50, minimum area 1 pixel and branch overlap >=0.05. It assumes an apple-only checkpoint; there is no class-ID filter. Branch masks are thresholded >127 and, by default, expanded into the central square of the original image before dilation (diameter 100). This geometry differs from traditional detection. Largest-branch-component filtering is disabled by default.
@@ -194,9 +162,7 @@ The script loads `RFDETRSegMedium`, applies confidence >=0.20, instance mask >0.
 RF-DETR training, when intentionally required, is separate:
 
 ```powershell
-
 python src/apple_segmenter_train.py
-
 ```
 
 It requires cleaned COCO train/valid data and requests 50 epochs at batch size 1. Importing this training module checks dataset paths and prints configuration. Avoid importing preparation/training scripts as passive libraries.
@@ -204,9 +170,7 @@ It requires cleaned COCO train/valid data and requests 50 epochs at batch size 1
 ## Compare saved detections
 
 ```powershell
-
 python src/compare_apple_detectors.py --max-distance 30 --thresholds 10 20 30 40 50
-
 ```
 
 Defaults read `apple_counts.csv` and `apple_instances.csv` from `outputs/apple_detection` and `outputs/apple_rfdetr_instances`, plus source summer RGB images. Options include `--traditional-dir`, `--reference-dir`, `--rgb-dir` and `--output-dir`. This command reads existing predictions; it does not run detectors.
@@ -231,33 +195,50 @@ See [output schemas](outputs/README.md) for CSV meanings and timing boundaries. 
 
 ## Reproduction and verification
 
-1\. Record your source revision, environment package versions, device, data provenance and checkpoint fingerprints.
+1. Record your source revision, environment package versions, device, data provenance and checkpoint fingerprints.
 
-2\. Check image triplets, GT field of view and COCO split independence. Keep evaluation human annotations separate from training if measuring real accuracy.
+2. Check image triplets, GT field of view and COCO split independence. Keep evaluation human annotations separate from training if measuring real accuracy.
 
-3\. Run preparation only when needed, then branch training and optional winter inference separately from apple detection.
+3. Run preparation only when needed, then branch training and optional winter inference separately from apple detection.
 
-4\. Use the configured local RF-DETR checkpoint and run each detector intentionally. Keep its input masks and source settings with the outputs.
+4. Use the configured local RF-DETR checkpoint and run each detector intentionally. Keep its input masks and source settings with the outputs.
 
-5\. Compare saved CSVs and retain the input manifest. Current constants alone cannot prove how historical CSVs were produced.
+5. Compare saved CSVs and retain the input manifest. Current constants alone cannot prove how historical CSVs were produced.
 
-Local synthetic matching tests can be run from `test/` with the already provisioned dependencies:
-
-```powershell
-
-python -m unittest test_apple_evaluation.EvaluationTests.test_exact_threshold_and_one_to_one test_apple_evaluation.EvaluationTests.test_cardinality_before_distance test_apple_evaluation.EvaluationTests.test_empty_and_metrics test_apple_evaluation.EvaluationTests.test_exact_filenames_and_row_order test_apple_evaluation.EvaluationTests.test_duplicates_validation_counts_and_zero -v
-
-```
-
-Full discovery from the repository root is available but is ****not an inference-free test run****:
+Run the independent synthetic software tests in `mma3001`:
 
 ```powershell
-
-python -m unittest discover -s test -p "test_apple*.py" -v
-
+conda activate mma3001
+python -m unittest discover -s test -p "test_*.py" -v
 ```
 
-It includes all-frame detection against Git HEAD, saved-output checks and a currently inconsistent export fixture. That fixture patches nonexistent `CSV_PATH` instead of the actual export-path constants and omits required timing fields. The saved-output check expects historical `apple_rfdetr_boxes_only`, not the current default. These pre-existing issues were documented without code fixes. See [documentation verification](docs/documentation_verification.md) for static syntax/AST checks and their limits.
+The suite requires no datasets, checkpoints, network, GPU or RF-DETR inference.
+It tests detection, CSV export/validation, comparison metrics and grid-search helpers.
+See [test instructions](test/README.md) and the [actual report](test/test_report.txt).
+These checks establish software behaviour on synthetic inputs, not model accuracy.
+
+## Full grid-search optimisation
+
+`src/full_grid_search_apple.py` enumerates 5,184 traditional configurations.
+Branch dilation (100 pixels), minimum branch overlap (0.05) and saved RF-DETR
+pseudo-reference predictions remain fixed. By default, SHA-256 tree grouping
+separates development and held-out frames; `--split all` removes held-out evaluation.
+
+```powershell
+conda run -n mma3001 python src/full_grid_search_apple.py --help
+```
+
+An intentional optimisation run uses the same script without `--help`; it requires
+orchard inputs and saved reference CSVs and is not part of automated testing.
+Selection supports F1, precision, recall, MAE, RMSE, centroid error, box IoU and
+absolute count bias. Results append per configuration and compatible runs resume.
+See [options](src/README.md) and [output files](outputs/README.md).
+
+Known limitation: changing `--select-by` in an existing output directory can reuse
+stale `heldout_comparison.csv`. Use a separate output directory for each objective.
+Source docstring changes alter resume fingerprints; retain historical outputs and
+use a new directory after this documentation update. Image bytes and environment
+versions are not fully fingerprinted, so metadata alone cannot ensure reproducibility.
 
 ## HTML documentation
 
