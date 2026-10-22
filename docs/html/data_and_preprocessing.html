@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Data and preprocessing &#8212; MMA3001 Source Documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=d5f7d5f2" />
+    <script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Model architectures" href="models.html" />
+    <link rel="prev" title="Apple workflows and environments" href="workflows.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="data-and-preprocessing">
+<h1>Data and preprocessing<a class="headerlink" href="#data-and-preprocessing" title="Link to this heading">¶</a></h1>
+<section id="pairing">
+<h2>Pairing<a class="headerlink" href="#pairing" title="Link to this heading">¶</a></h2>
+<p>Branch trainers recursively locate lowercase-extension <code class="docutils literal notranslate"><span class="pre">*.png</span></code> files with summer in the stem. <code class="docutils literal notranslate"><span class="pre">_RGB-</span></code>, <code class="docutils literal notranslate"><span class="pre">_D-</span></code> and <code class="docutils literal notranslate"><span class="pre">_GT-</span></code> are replaced by a common token to pair each tree/season/time identifier. Duplicate keys raise errors; incomplete triplets are omitted. Filename agreement alone does not verify spatial registration.</p>
+<p>The organised layout is <code class="docutils literal notranslate"><span class="pre">data/Organised/&lt;Summer|Winter&gt;/&lt;RGB|D|GT&gt;/</span></code>. Winter inference pairs winter RGB/depth without GT. There is no independently audited dataset count in this documentation update; earlier exact counts and image dimensions have been removed as unverified historical observations. See the maintained data README for COCO preparation and apple inputs.</p>
+</section>
+<section id="tensor-contract">
+<h2>Tensor contract<a class="headerlink" href="#tensor-contract" title="Link to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p>Convert RGB to RGB mode and depth to L-mode grayscale.</p></li>
+<li><p>Centre-crop each to its largest square. A 640x480 frame would yield a central 480x480 crop; this is a geometric example, not a verified inventory.</p></li>
+<li><p>Resize to input_size (default 256): bilinear RGB, nearest-neighbour depth.</p></li>
+<li><p>Divide RGB by 255, then use means <code class="docutils literal notranslate"><span class="pre">[0.485,</span> <span class="pre">0.456,</span> <span class="pre">0.406]</span></code> and standard deviations <code class="docutils literal notranslate"><span class="pre">[0.229,</span> <span class="pre">0.224,</span> <span class="pre">0.225]</span></code>. The MLP uses the same scaling as the U-Nets.</p></li>
+<li><p>Divide grayscale depth by 255 and concatenate after RGB: float32 <code class="docutils literal notranslate"><span class="pre">[4,</span> <span class="pre">S,</span> <span class="pre">S]</span></code> per sample or <code class="docutils literal notranslate"><span class="pre">[B,</span> <span class="pre">4,</span> <span class="pre">S,</span> <span class="pre">S]</span></code> per batch.</p></li>
+<li><p>Convert GT to L mode without cropping/resizing; require dimensions <code class="docutils literal notranslate"><span class="pre">(S,</span> <span class="pre">S)</span></code>. Set target=1 where GT &gt;mask_threshold (127 by default), otherwise 0. Target is float32 <code class="docutils literal notranslate"><span class="pre">[1,</span> <span class="pre">S,</span> <span class="pre">S]</span></code>.</p></li>
+</ol>
+<p>ImageNet normalisation aligns RGB scaling with the pretrained encoder; depth remains a separate intensity feature. Nearest-neighbour depth interpolation avoids creating intermediate encoded values. L conversion is not metric depth calibration and can discard precision from richer source depth encodings.</p>
+<p>GT must already describe the same centred field of view, not merely share dimensions. This assumption is not proven by script checks. A mismatch in GT size raises RuntimeError; a wrong field of view can pass size validation. Model inference must preserve training channel order, geometry and scaling.</p>
+</section>
+<section id="apple-mask-distinctions">
+<h2>Apple mask distinctions<a class="headerlink" href="#apple-mask-distinctions" title="Link to this heading">¶</a></h2>
+<p>Traditional apple detection retains original RGB/depth grids and requires equal spatial dimensions. Depth &gt;0 means valid; GT is full-frame nearest-neighbour resized, with foreground &gt;0. RF-DETR does not use depth; its GT foreground cutoff is &gt;127, default alignment centres a square mask in the original frame, and predicted mode only reads external masks. Both dilate branch regions using a diameter-100 ellipse by default; differing alignment/cutoffs still create different regions.</p>
+<p>Branch GT is not apple-instance annotation. COCO files may contain apple annotations, but authorship, frame correspondence and train/evaluation separation require verification. RF-DETR detections used for comparison are pseudo-ground truth and do not establish real accuracy.</p>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Apple Tree Localiser — MMA3001</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Project documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflows.html">Apple workflows and environments</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Data and preprocessing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#pairing">Pairing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tensor-contract">Tensor contract</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#apple-mask-distinctions">Apple mask distinctions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="models.html">Model architectures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="training_and_evaluation.html">Training and evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">Source API reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="workflows.html" title="previous chapter">Apple workflows and environments</a></li>
+      <li>Next: <a href="models.html" title="next chapter">Model architectures</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2026, Chan Lik Wai.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="_sources/data_and_preprocessing.md.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

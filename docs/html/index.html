@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Apple Tree Localiser - MMA3001 &#8212; MMA3001 Source Documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=d5f7d5f2" />
+    <script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Overview" href="overview.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="apple-tree-localiser-mma3001">
+<h1>Apple Tree Localiser - MMA3001<a class="headerlink" href="#apple-tree-localiser-mma3001" title="Link to this heading">¶</a></h1>
+<p>Documentation for RGB-D branch segmentation and 2D apple localisation, including
+MLP/U-Net models, traditional detection, RF-DETR, comparison, optimisation and
+preprocessing. Detectors currently default to branch ground truth rather than an
+automatically connected branch-model pipeline.</p>
+<p>The API reference uses existing docstrings and statically extracted signatures.
+Building this site does not import any project source module.</p>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Project documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflows.html">Apple workflows and environments</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html#two-conda-environments">Two Conda environments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html#api-navigation">API navigation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html#licence-boundary">Licence boundary</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="data_and_preprocessing.html">Data and preprocessing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="data_and_preprocessing.html#pairing">Pairing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="data_and_preprocessing.html#tensor-contract">Tensor contract</a></li>
+<li class="toctree-l2"><a class="reference internal" href="data_and_preprocessing.html#apple-mask-distinctions">Apple mask distinctions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="models.html">Model architectures</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="models.html#pixel-mlp">Pixel MLP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="models.html#basic-resnet-34-u-net">Basic ResNet-34 U-Net</a></li>
+<li class="toctree-l2"><a class="reference internal" href="models.html#extended-resnet-34-u-net">Extended ResNet-34 U-Net</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="training_and_evaluation.html">Training and evaluation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="training_and_evaluation.html#training-configuration">Training configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="training_and_evaluation.html#metrics">Metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="training_and_evaluation.html#winter-and-apple-interpretation">Winter and apple interpretation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="training_and_evaluation.html#testing-boundaries">Testing boundaries</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#branch-options">Branch options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#train-separately">Train separately</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#winter-predictions">Winter predictions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#build-and-view-documentation">Build and view documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">Source API reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/apple_predictor_v1.html">apple_predictor_v1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/apple_segmenter_train.html">apple_segmenter_train</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/apple_segmenter_v1.html">apple_segmenter_v1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/compare_apple_detectors.html">compare_apple_detectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/dataset_organiser.html">dataset_organiser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/full_grid_search_apple.html">full_grid_search_apple</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/optimise_apple_predictor.html">optimise_apple_predictor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/preprocess_roboflow_dataset.html">preprocess_roboflow_dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/train_baseline.html">train_baseline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/train_improved_unet.html">train_improved_unet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/train_unet.html">train_unet</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">Apple Tree Localiser — MMA3001</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Project documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflows.html">Apple workflows and environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data_and_preprocessing.html">Data and preprocessing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models.html">Model architectures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="training_and_evaluation.html">Training and evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">Source API reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+      <li>Next: <a href="overview.html" title="next chapter">Overview</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2026, Chan Lik Wai.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

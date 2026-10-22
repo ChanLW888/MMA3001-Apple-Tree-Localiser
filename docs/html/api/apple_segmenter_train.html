@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>apple_segmenter_train &#8212; MMA3001 Source Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=d5f7d5f2" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="apple_segmenter_v1" href="apple_segmenter_v1.html" />
+    <link rel="prev" title="apple_predictor_v1" href="apple_predictor_v1.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-apple_segmenter_train">
+<span id="apple-segmenter-train"></span><h1>apple_segmenter_train<a class="headerlink" href="#module-apple_segmenter_train" title="Link to this heading">¶</a></h1>
+<p>Source: <code class="docutils literal notranslate"><span class="pre">src/apple_segmenter_train.py</span></code>.</p>
+<p>Statically extracted signatures and existing docstrings; no module execution.</p>
+<p>Train the RF-DETR medium apple instance-segmentation model.</p>
+<p>Uses cleaned COCO train/valid splits in data/apple_tree_clean. Requests 50 epochs and
+batch size 1; remaining defaults belong to rfdetr. Writes outputs/rfdetr_apple_tree.
+Import checks paths and prints configuration; training requires main. Cached pretrained
+weights may be needed offline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">raises FileNotFoundError<span class="colon">:</span></dt>
+<dd class="field-odd"><p>If data folders or COCO files are missing.</p>
+</dd>
+<dt class="field-even">raises ImportError<span class="colon">:</span></dt>
+<dd class="field-even"><p>If rfdetr is unavailable.</p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<p>python src/apple_segmenter_train.py</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="apple_segmenter_train.main">
+<span class="sig-prename descclassname"><span class="pre">apple_segmenter_train.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#apple_segmenter_train.main" title="Link to this definition">¶</a></dt>
+<dd><p>Train RFDETRSegMedium on cleaned apple COCO splits.</p>
+<p>Uses 50 epochs, batch size 1 and library defaults otherwise. Writes
+outputs/rfdetr_apple_tree. Module checks dataset paths at import. Construction may
+retrieve pretrained weights if uncached.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>OSError</strong> – If data, pretrained weights or output cannot be accessed.</p></li>
+<li><p><strong>RuntimeError</strong> – If training fails.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Apple Tree Localiser — MMA3001</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Project documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../workflows.html">Apple workflows and environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data_and_preprocessing.html">Data and preprocessing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../models.html">Model architectures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../training_and_evaluation.html">Training and evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Source API reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="apple_predictor_v1.html">apple_predictor_v1</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">apple_segmenter_train</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apple_segmenter_v1.html">apple_segmenter_v1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="compare_apple_detectors.html">compare_apple_detectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dataset_organiser.html">dataset_organiser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="full_grid_search_apple.html">full_grid_search_apple</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimise_apple_predictor.html">optimise_apple_predictor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preprocess_roboflow_dataset.html">preprocess_roboflow_dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="train_baseline.html">train_baseline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="train_improved_unet.html">train_improved_unet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="train_unet.html">train_unet</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Source API reference</a><ul>
+      <li>Previous: <a href="apple_predictor_v1.html" title="previous chapter">apple_predictor_v1</a></li>
+      <li>Next: <a href="apple_segmenter_v1.html" title="next chapter">apple_segmenter_v1</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2026, Chan Lik Wai.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/api/apple_segmenter_train.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

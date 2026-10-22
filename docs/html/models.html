@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Model architectures &#8212; MMA3001 Source Documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=d5f7d5f2" />
+    <script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Training and evaluation" href="training_and_evaluation.html" />
+    <link rel="prev" title="Data and preprocessing" href="data_and_preprocessing.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="model-architectures">
+<h1>Model architectures<a class="headerlink" href="#model-architectures" title="Link to this heading">¶</a></h1>
+<section id="pixel-mlp">
+<h2>Pixel MLP<a class="headerlink" href="#pixel-mlp" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">src/train_baseline.py</span></code> applies dense widths 4 -&gt;64 -&gt;32 -&gt;16 -&gt;1 with ReLU between hidden layers by default. Pixels are permuted/flattened into a feature batch, classified independently, then restored to <code class="docutils literal notranslate"><span class="pre">[B,</span> <span class="pre">1,</span> <span class="pre">H,</span> <span class="pre">W]</span></code>. Reshaping preserves pixel correspondence; it does not give the network neighbouring-pixel context. Hidden widths can be configured with <code class="docutils literal notranslate"><span class="pre">--hidden-dims</span></code>.</p>
+</section>
+<section id="basic-resnet-34-u-net">
+<h2>Basic ResNet-34 U-Net<a class="headerlink" href="#basic-resnet-34-u-net" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">src/train_unet.py</span></code> uses a ResNet-34 stem and four encoder stages, then bilinear resizing and concatenated skips. A padded pair of convolution/batch-normalisation/ReLU layers processes each decoder stage. Final interpolation restores the input grid, and a 1x1 convolution yields one raw branch logit per pixel.</p>
+<p>Default ImageNet initialisation retains the RGB filters in the first convolution and uses their channel mean for depth. The implementation is intended for four-channel input; pretrained initialisation assumes RGB-D despite the constructor’s configurable channel argument. <code class="docutils literal notranslate"><span class="pre">--no-pretrained</span></code> uses local random initialisation. Default pretraining may retrieve weights if not cached.</p>
+</section>
+<section id="extended-resnet-34-u-net">
+<h2>Extended ResNet-34 U-Net<a class="headerlink" href="#extended-resnet-34-u-net" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">src/train_improved_unet.py</span></code> adds:</p>
+<ul class="simple">
+<li><p>ASPP: a 1x1 branch plus 3x3 branches with dilation 2, 4 and 6. Concatenation/projection produces 256 context channels at the deepest encoder grid, with dropout 0.10.</p></li>
+<li><p>Attention gates: projected decoder context and encoder features produce a sigmoid spatial map. Multiplication preserves each skip’s channel count; a gate output is a feature tensor, not a one-channel segmentation logit.</p></li>
+<li><p>Residual decoding: resize decoder context to the skip grid, concatenate, apply convolutions and add an identity or projected shortcut. Decoder widths are 192, 128, 96 and 64, followed by refinement and a one-channel output head.</p></li>
+</ul>
+<p>All models output logits. Sigmoid is applied for thresholded validation and displays; BCE-with-logits consumes raw scores directly. Intermediate convolution, ASPP and decoder outputs retain their configured feature channels rather than becoming branch predictions.</p>
+<p>The extended trainer also uses paired horizontal/vertical flips and RGB brightness/contrast perturbation after normalisation. Depth is not colour-jittered. Optimiser/loss differences are detailed in <a class="reference internal" href="training_and_evaluation.html"><span class="std std-doc">training and evaluation</span></a>. These changes express design intent, not verified performance improvement.</p>
+<p><code class="docutils literal notranslate"><span class="pre">test/winter_inference.py</span></code> reconstructs matching model structures/state keys with torchvision weights=None and strictly loads local checkpoints. It requires compatible architectures and trusted checkpoint files; it is not a general checkpoint converter.</p>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Apple Tree Localiser — MMA3001</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Project documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflows.html">Apple workflows and environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data_and_preprocessing.html">Data and preprocessing</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Model architectures</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#pixel-mlp">Pixel MLP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#basic-resnet-34-u-net">Basic ResNet-34 U-Net</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#extended-resnet-34-u-net">Extended ResNet-34 U-Net</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="training_and_evaluation.html">Training and evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">Source API reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="data_and_preprocessing.html" title="previous chapter">Data and preprocessing</a></li>
+      <li>Next: <a href="training_and_evaluation.html" title="next chapter">Training and evaluation</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2026, Chan Lik Wai.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="_sources/models.md.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

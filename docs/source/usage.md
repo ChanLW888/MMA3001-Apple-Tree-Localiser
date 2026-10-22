@@ -30,20 +30,13 @@ python test/winter_inference.py --data-root data/Organised --mlp-checkpoint outp
 
 These are expected generated paths, not files distributed with Git. Override paths for historical/custom runs. Checkpoints must be trusted and architecture-compatible. Supply `--input-size` explicitly when it differs from 256; geometry is not inferred from checkpoint metadata. `--threshold` defaults to 0.5, `--warmup` to 5. Output masks and model-only timing do not measure winter accuracy without GT.
 
-## Build the static guide
+## Build and view documentation
 
-With Sphinx/MyST already installed:
-
-```powershell
-python -m sphinx -b html docs/source docs/_build/html
-```
-
-Dependency setup, when separately needed, uses the existing specification:
+From the repository root, with Sphinx/MyST already installed in `mma3001`:
 
 ```powershell
-python -m pip install -r docs/requirements-docs.txt
+conda run --no-capture-output -n mma3001 python -m sphinx -E -a -W --keep-going -c docs/static_config -b html docs/source docs/_build/html
+conda run --no-capture-output -n mma3001 python -m sphinx -E -a -W --keep-going -c docs/static_config -b html -d docs/_build/submission-doctrees docs/source docs/html
 ```
 
-Open `docs/_build/html/index.html` after building. This is a generated path, not a committed HTML file. The guide does not import project training or detector modules. No dependency installation or HTML build was performed for this documentation update.
-
-For complete apple detection/comparison commands, local synthetic test instructions and documented pre-existing test issues, see the repository root README and docs/documentation_verification.md.
+Open `docs/_build/html/index.html` or the submission copy `docs/html/index.html` in a browser. Preserve all sibling files and asset directories. Static extraction reads source text and never imports project modules. No package installation, training or inference is required for the documentation build.

@@ -1,0 +1,29 @@
+# Apple workflows and environments
+
+The project combines RGB-D branch segmentation with separate 2D apple localisation experiments. Both detectors default to branch ground truth; they do not automatically run trained branch networks. RF-DETR predictions used for comparison are pseudo-ground truth, not verified apple annotations.
+
+## Two Conda environments
+
+Run commands from the repository root. Activate with `conda activate mma3001` or `conda activate rfdetr`. Environment creation is separate from documentation building; existing exports are unchanged.
+
+| Environment | Export | Workflows |
+|---|---|---|
+| `mma3001` | `environment.yml` | Branch training, traditional detection, comparison, optimisation, dataset utilities; documentation with existing Sphinx/MyST |
+| `rfdetr` | `rfdetr_environment.yml` | RF-DETR segmentation training and inference |
+
+The two detector stacks need not coexist in one environment. Datasets and checkpoints are supplied separately. Exported packages do not establish clean-machine, operating-system or CUDA compatibility.
+
+## API navigation
+
+- Branch models/training: [MLP](api/train_baseline.rst), [U-Net](api/train_unet.rst), [extended U-Net](api/train_improved_unet.rst).
+- Traditional detection: [apple predictor](api/apple_predictor_v1.rst).
+- RF-DETR: [training](api/apple_segmenter_train.rst), [inference](api/apple_segmenter_v1.rst).
+- Saved-prediction [comparison](api/compare_apple_detectors.rst).
+- Parameter experiments: [one-factor sensitivity](api/optimise_apple_predictor.rst), [full grid search](api/full_grid_search_apple.rst).
+- Dataset utilities: [orchard organiser](api/dataset_organiser.rst), [COCO preprocessing](api/preprocess_roboflow_dataset.rst).
+
+Comparison reads saved predictions; parameter experiments execute detection when deliberately run. Documentation building only parses source text. No training, inference or experiment is needed to build this site.
+
+## Licence boundary
+
+The root MIT licence applies only to original project code owned by Chan Lik Wai. It grants no ownership or redistribution rights for university orchard datasets, Roboflow datasets, third-party weights, RF-DETR code or pretrained weights, or other externally licensed materials. Their own terms and permissions continue to apply. Dataset provenance and redistribution permission remain to be confirmed separately.

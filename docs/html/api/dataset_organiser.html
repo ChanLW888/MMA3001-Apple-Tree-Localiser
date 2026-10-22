@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>dataset_organiser &#8212; MMA3001 Source Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=d5f7d5f2" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="full_grid_search_apple" href="full_grid_search_apple.html" />
+    <link rel="prev" title="compare_apple_detectors" href="compare_apple_detectors.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-dataset_organiser">
+<span id="dataset-organiser"></span><h1>dataset_organiser<a class="headerlink" href="#module-dataset_organiser" title="Link to this heading">¶</a></h1>
+<p>Source: <code class="docutils literal notranslate"><span class="pre">src/dataset_organiser.py</span></code>.</p>
+<p>Statically extracted signatures and existing docstrings; no module execution.</p>
+<p>Copy flat orchard PNGs into season/modality directories.</p>
+<p>Running or importing immediately creates directories, copies matching files from
+data/Dataset (With Summer GT) to data/Organised and prints counts/basic PNG checks.
+Actual path constants use Windows separators and are relative to the working directory.
+Copies can overwrite existing destinations. Does not resample or align images.</p>
+<dl class="field-list simple">
+<dt class="field-odd">raises OSError<span class="colon">:</span></dt>
+<dd class="field-odd"><p>If source listing, directory creation or copying fails.</p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<p>From repository root: python src/dataset_organiser.py</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="dataset_organiser.read_png">
+<span class="sig-prename descclassname"><span class="pre">dataset_organiser.</span></span><span class="sig-name descname"><span class="pre">read_png</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dataset_organiser.read_png" title="Link to this definition">¶</a></dt>
+<dd><p>Decode basic 8-bit grayscale or RGB PNG scanlines.</p>
+<p>Reverses PNG filters modulo 256, including Paeth. Does not validate signature, CRC
+or interlace method; this is a minimal checker, not a general PNG validator.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filename</strong> – str or os.PathLike; non-interlaced PNG, colour type 0 or 2.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Width, height, channels (1 or 3) and flat</dt><dd><p>row-major interleaved bytes in [0, 255].</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[int, int, int, list[int]]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If bit depth, colour type or row filter is unsupported.</p></li>
+<li><p><strong>OSError</strong> – If reading fails.</p></li>
+<li><p><strong>zlib.error</strong> – If compressed data is invalid.</p></li>
+<li><p><strong>struct.error</strong> – If chunk fields are truncated.</p></li>
+<li><p><strong>IndexError</strong> – If decompressed rows are truncated.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Apple Tree Localiser — MMA3001</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Project documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../workflows.html">Apple workflows and environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data_and_preprocessing.html">Data and preprocessing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../models.html">Model architectures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../training_and_evaluation.html">Training and evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Source API reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="apple_predictor_v1.html">apple_predictor_v1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apple_segmenter_train.html">apple_segmenter_train</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apple_segmenter_v1.html">apple_segmenter_v1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="compare_apple_detectors.html">compare_apple_detectors</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">dataset_organiser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="full_grid_search_apple.html">full_grid_search_apple</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimise_apple_predictor.html">optimise_apple_predictor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preprocess_roboflow_dataset.html">preprocess_roboflow_dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="train_baseline.html">train_baseline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="train_improved_unet.html">train_improved_unet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="train_unet.html">train_unet</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Source API reference</a><ul>
+      <li>Previous: <a href="compare_apple_detectors.html" title="previous chapter">compare_apple_detectors</a></li>
+      <li>Next: <a href="full_grid_search_apple.html" title="next chapter">full_grid_search_apple</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2026, Chan Lik Wai.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/api/dataset_organiser.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

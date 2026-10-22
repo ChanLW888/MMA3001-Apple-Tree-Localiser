@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>apple_predictor_v1 &#8212; MMA3001 Source Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=d5f7d5f2" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="apple_segmenter_train" href="apple_segmenter_train.html" />
+    <link rel="prev" title="Source API reference" href="index.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-apple_predictor_v1">
+<span id="apple-predictor-v1"></span><h1>apple_predictor_v1<a class="headerlink" href="#module-apple_predictor_v1" title="Link to this heading">¶</a></h1>
+<p>Source: <code class="docutils literal notranslate"><span class="pre">src/apple_predictor_v1.py</span></code>.</p>
+<p>Statically extracted signatures and existing docstrings; no module execution.</p>
+<p>Detect red apples with depth validity and branch ground truth.</p>
+<p>A 2D image-space baseline, not metric 3D localisation. Branch GT (&gt;0) is stretched to
+the full RGB grid and dilated. RGB/depth must be aligned. Writes annotation PNGs,
+counts, instances, timings and metadata under outputs/apple_detection.</p>
+<p class="rubric">Example</p>
+<p>python src/apple_predictor_v1.py</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="apple_predictor_v1.parse_rgb_filename">
+<span class="sig-prename descclassname"><span class="pre">apple_predictor_v1.</span></span><span class="sig-name descname"><span class="pre">parse_rgb_filename</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#apple_predictor_v1.parse_rgb_filename" title="Link to this definition">¶</a></dt>
+<dd><p>Parse tree, season and time from an RGB PNG basename.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – pathlib.Path; expected
+R&lt;digits&gt;N&lt;digits&gt;_&lt;Summer|Winter&gt;_RGB-&lt;time&gt;.png.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>tree, season and time in original case, or None for</dt><dd><p>unmatched names.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str, str] or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="apple_predictor_v1.load_rgb">
+<span class="sig-prename descclassname"><span class="pre">apple_predictor_v1.</span></span><span class="sig-name descname"><span class="pre">load_rgb</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#apple_predictor_v1.load_rgb" title="Link to this definition">¶</a></dt>
+<dd><p>Read an image in RGB channel order.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – str or pathlib.Path; readable image path.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>uint8 [H, W, 3] RGB in [0, 255].</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>OSError</strong> – If image opening or decoding fails.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="apple_predictor_v1.load_depth">
+<span class="sig-prename descclassname"><span class="pre">apple_predictor_v1.</span></span><span class="sig-name descname"><span class="pre">load_depth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#apple_predictor_v1.load_depth" title="Link to this definition">¶</a></dt>
+<dd><p>Read stored depth intensities without metric conversion.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – str or pathlib.Path; readable depth image.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>[H, W] in stored dtype; first channel is used for</dt><dd><p>multichannel images.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>OSError</strong> – If image opening or decoding fails.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="apple_predictor_v1.load_gt">
+<span class="sig-prename descclassname"><span class="pre">apple_predictor_v1.</span></span><span class="sig-name descname"><span class="pre">load_gt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_shape</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#apple_predictor_v1.load_gt" title="Link to this definition">¶</a></dt>
+<dd><p>Load branch ground truth and stretch it to the RGB grid.</p>
+<p>Nearest-neighbour interpolation preserves labels. Full-frame stretching differs from
+RF-DETR default central placement; it does not verify annotation geometry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – str or pathlib.Path; branch GT image, not apple-instance annotation.</p></li>
+<li><p><strong>target_shape</strong> – tuple[int, int]; positive original (height, width) in pixels.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>uint8 [H, W] grayscale GT; foreground is interpreted</dt><dd><p>downstream as &gt;0.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>OSError</strong> – If GT cannot be decoded.</p></li>
+<li><p><strong>cv2.error</strong> – If resize dimensions are invalid.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="apple_predictor_v1.detect_red_mask">
+<span class="sig-prename descclassname"><span class="pre">apple_predictor_v1.</span></span><span class="sig-name descname"><span class="pre">detect_red_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rgb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">depth</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#apple_predictor_v1.detect_red_mask" title="Link to this definition">¶</a></dt>
+<dd><p>Select red-dominant pixels with valid depth.</p>
+<p>Floating channel arithmetic avoids uint8 overflow. Thresholds are module constants;
+depth supplies validity, not 3D coordinates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rgb</strong> – numpy.ndarray; [H, W, 3] RGB intensities in [0, 255].</p></li>
+<li><p><strong>depth</strong> – numpy.ndarray; aligned [H, W] values, valid when &gt;0.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>uint8 [H, W] binary mask.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If depth cannot broadcast to the RGB grid.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="apple_predictor_v1.clean_red_mask">
+<span class="sig-prename descclassname"><span class="pre">apple_predictor_v1.</span></span><span class="sig-name descname"><span class="pre">clean_red_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mask</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#apple_predictor_v1.clean_red_mask" title="Link to this definition">¶</a></dt>
+<dd><p>Suppress isolated red noise and close small gaps.</p>
+<p>The ellipse is MORPH_KERNEL_SIZE pixels wide/high. Morphology may merge nearby
+regions; components are candidates rather than guaranteed apples.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>mask</strong> – numpy.ndarray; uint8 [H, W] binary red mask.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>uint8 [H, W] opened then closed mask.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>cv2.error</strong> – If mask or kernel is invalid.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="apple_predictor_v1.create_branch_zone">
+<span class="sig-prename descclassname"><span class="pre">apple_predictor_v1.</span></span><span class="sig-name descname"><span class="pre">create_branch_zone</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gt</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#apple_predictor_v1.create_branch_zone" title="Link to this definition">¶</a></dt>
+<dd><p>Dilate labelled branch pixels into a proximity region.</p>
+<p>BRANCH_DILATION is ellipse diameter in source-image pixels, not radius. Uses
+ground-truth branches, not predicted segmentation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>gt</strong> – numpy.ndarray; aligned [H, W] branch GT, foreground &gt;0.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>uint8 [H, W] zone in {0, 1}.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>cv2.error</strong> – If morphology input or kernel is invalid.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="apple_predictor_v1.find_apple_candidates">
+<span class="sig-prename descclassname"><span class="pre">apple_predictor_v1.</span></span><span class="sig-name descname"><span class="pre">find_apple_candidates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rgb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">depth</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gt</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#apple_predictor_v1.find_apple_candidates" title="Link to this definition">¶</a></dt>
+<dd><p>Filter connected red components by geometry and branch proximity.</p>
+<p>Original-image coordinates: top-left origin, x right, y down. Overlap is
+intersection/whole-component area. Red score is mean R/(G+B+1), not calibrated
+confidence. No apple labels are read.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rgb</strong> – numpy.ndarray; uint8 [H, W, 3] RGB.</p></li>
+<li><p><strong>depth</strong> – numpy.ndarray; aligned [H, W] depth-validity intensities.</p></li>
+<li><p><strong>gt</strong> – numpy.ndarray; aligned [H, W] branch ground truth.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>label, area (pixels), bbox (x, y, width, height), centroid (x,</dt><dd><p>y), circularity, aspect_ratio, branch_overlap and red_score.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[dict]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If RGB/depth/GT spatial shapes differ.</p></li>
+<li><p><strong>cv2.error</strong> – If image processing fails.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="apple_predictor_v1.render_apple_annotations">
+<span class="sig-prename descclassname"><span class="pre">apple_predictor_v1.</span></span><span class="sig-name descname"><span class="pre">render_apple_annotations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image_bgr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boxes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">centroids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color_bgr</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#apple_predictor_v1.render_apple_annotations" title="Link to this definition">¶</a></dt>
+<dd><p>Render boxes, centres, indices and total count on a copy.</p>
+<p>zip truncates unequal box/centroid sequences; callers should supply one centre per
+box.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>image_bgr</strong> – numpy.ndarray; uint8 [H, W, 3] OpenCV BGR.</p></li>
+<li><p><strong>boxes</strong> – Sequence of inclusive (x1, y1, x2, y2) boxes in pixels.</p></li>
+<li><p><strong>centroids</strong> – Sequence of floating (x, y) centres paired with boxes.</p></li>
+<li><p><strong>color_bgr</strong> – tuple[int, int, int]; BGR colour in [0, 255].</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Annotated BGR copy with original shape/dtype.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>cv2.error</strong> – If drawing arguments are invalid.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="apple_predictor_v1.draw_annotations">
+<span class="sig-prename descclassname"><span class="pre">apple_predictor_v1.</span></span><span class="sig-name descname"><span class="pre">draw_annotations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rgb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">candidates</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#apple_predictor_v1.draw_annotations" title="Link to this definition">¶</a></dt>
+<dd><p>Convert candidate boxes to inclusive corners and draw orange labels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rgb</strong> – numpy.ndarray; uint8 [H, W, 3] RGB.</p></li>
+<li><p><strong>candidates</strong> – list[dict] from find_apple_candidates.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Annotated RGB copy for Pillow saving.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>KeyError</strong> – If bbox or centroid is missing.</p></li>
+<li><p><strong>cv2.error</strong> – If colour conversion or drawing fails.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="apple_predictor_v1.get_matching_files">
+<span class="sig-prename descclassname"><span class="pre">apple_predictor_v1.</span></span><span class="sig-name descname"><span class="pre">get_matching_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rgb_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">info</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#apple_predictor_v1.get_matching_files" title="Link to this definition">¶</a></dt>
+<dd><p>Build depth and branch-GT paths for a parsed frame.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rgb_path</strong> – pathlib.Path; accepted but unused.</p></li>
+<li><p><strong>info</strong> – dict[str, str]; tree, season and time from parse_rgb_filename.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Depth and GT paths; existence is not</dt><dd><p>checked.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[pathlib.Path, pathlib.Path]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>KeyError</strong> – If required metadata is missing.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="apple_predictor_v1.process_frame">
+<span class="sig-prename descclassname"><span class="pre">apple_predictor_v1.</span></span><span class="sig-name descname"><span class="pre">process_frame</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rgb_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">info</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#apple_predictor_v1.process_frame" title="Link to this definition">¶</a></dt>
+<dd><p>Load one frame, detect candidates and save annotations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rgb_path</strong> – pathlib.Path to the RGB image.</p></li>
+<li><p><strong>info</strong> – dict[str, str]; parsed tree, season and time.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Frame identity, candidates, dimensions and</dt><dd><p>read_ms/detection_ms/save_ms; None if depth or GT is missing. main adds
+total_ms.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict or None</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If RGB/depth shapes differ.</p></li>
+<li><p><strong>OSError</strong> – If decoding or annotation saving fails.</p></li>
+<li><p><strong>cv2.error</strong> – If image processing fails.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="apple_predictor_v1.find_all_frames">
+<span class="sig-prename descclassname"><span class="pre">apple_predictor_v1.</span></span><span class="sig-name descname"><span class="pre">find_all_frames</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#apple_predictor_v1.find_all_frames" title="Link to this definition">¶</a></dt>
+<dd><p>Discover complete configured-season RGB/depth/GT triplets.</p>
+<p>Warns and skips unexpected names or missing companions. An absent RGB directory
+produces an empty list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Frames sorted by tree and timestamp string.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list[tuple[pathlib.Path, dict]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="apple_predictor_v1.instance_rows">
+<span class="sig-prename descclassname"><span class="pre">apple_predictor_v1.</span></span><span class="sig-name descname"><span class="pre">instance_rows</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#apple_predictor_v1.instance_rows" title="Link to this definition">¶</a></dt>
+<dd><p>Export components in the shared instance-CSV convention.</p>
+<p>confidence is intentionally blank; red_score is an uncalibrated colour statistic.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>result</strong> – dict with image, instances, image_width and image_height.</p>
+</dd>
+<dt class="field-even">Yields<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>dict</em> –</p>
+<dl class="simple">
+<dt>One row per candidate with 1-based apple_id, inclusive xyxy box and</dt><dd><p>mean-pixel centroid in original RGB coordinates.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>KeyError</strong> – If required result/candidate fields are absent.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="apple_predictor_v1.save_csv">
+<span class="sig-prename descclassname"><span class="pre">apple_predictor_v1.</span></span><span class="sig-name descname"><span class="pre">save_csv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#apple_predictor_v1.save_csv" title="Link to this definition">¶</a></dt>
+<dd><p>Write counts, instances, timing CSVs and run metadata.</p>
+<p>Overwrites configured CSVs. Durations are milliseconds. Metadata records traditional
+parameters and GT full-resize alignment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>results</strong> – list[dict]; process_frame results with total_ms added by main.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>KeyError</strong> – If any export field, including total_ms, is missing.</p></li>
+<li><p><strong>OSError</strong> – If output creation or writing fails.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="apple_predictor_v1.main">
+<span class="sig-prename descclassname"><span class="pre">apple_predictor_v1.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#apple_predictor_v1.main" title="Link to this definition">¶</a></dt>
+<dd><p>Process configured frames and export traditional detector outputs.</p>
+<p>Configuration uses module constants, not CLI flags. Prints and returns without
+exports when no complete frames exist.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If RGB/depth geometry differs.</p></li>
+<li><p><strong>OSError</strong> – If input reading or output writing fails.</p></li>
+<li><p><strong>cv2.error</strong> – If processing fails.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Apple Tree Localiser — MMA3001</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Project documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../workflows.html">Apple workflows and environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data_and_preprocessing.html">Data and preprocessing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../models.html">Model architectures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../training_and_evaluation.html">Training and evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Source API reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">apple_predictor_v1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apple_segmenter_train.html">apple_segmenter_train</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apple_segmenter_v1.html">apple_segmenter_v1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="compare_apple_detectors.html">compare_apple_detectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dataset_organiser.html">dataset_organiser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="full_grid_search_apple.html">full_grid_search_apple</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimise_apple_predictor.html">optimise_apple_predictor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preprocess_roboflow_dataset.html">preprocess_roboflow_dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="train_baseline.html">train_baseline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="train_improved_unet.html">train_improved_unet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="train_unet.html">train_unet</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Source API reference</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Source API reference</a></li>
+      <li>Next: <a href="apple_segmenter_train.html" title="next chapter">apple_segmenter_train</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2026, Chan Lik Wai.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/api/apple_predictor_v1.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

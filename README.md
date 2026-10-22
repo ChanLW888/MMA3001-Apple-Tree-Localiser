@@ -8,16 +8,16 @@ The engineering objective is reproducible image-space apple candidates and branc
 
 | Location | Maintained content |
 |---|---|
-| [environment.yaml](environment.yaml) | Exported `mma3001` Conda dependencies |
-| [rfdetr_environment.yaml](rfdetr_environment.yaml) | Exported `rfdetr` Conda dependencies |
+| [environment.yml](environment.yml) | Exported `mma3001` Conda dependencies |
+| [rfdetr_environment.yml](rfdetr_environment.yml) | Exported `rfdetr` Conda dependencies |
 | [src/README.md](src/README.md) | Preparation, branch training, apple detection and comparison scripts |
 | [test/test_apple_evaluation.py](test/test_apple_evaluation.py) | Synthetic matching tests and data-dependent regression checks |
 | [test/winter_inference.py](test/winter_inference.py) | Qualitative branch predictions and forward-pass timing with three checkpoints |
 | [data/README.md](data/README.md) | Orchard PNG naming, organised layout and COCO split requirements |
 | [outputs/README.md](outputs/README.md) | Output directories, CSV conventions and interpretation |
-| [docs/README.md](docs/README.md) | Static Sphinx branch-segmentation guide and HTML build instructions |
+| [docs/README.md](docs/README.md) | Sphinx project guide, static source API and HTML build instructions |
 
-Datasets, checkpoints, generated results, caches and HTML builds are excluded from source control. The folder READMEs are maintained documentation, not generated outputs.
+Datasets, checkpoints, generated results, caches and docs/_build/ are excluded from source control. The submission HTML in docs/html/ is not ignored. The folder READMEs are maintained documentation, not generated outputs.
 
 ## Environment and hardware
 
@@ -25,13 +25,13 @@ Two exported Conda environments are used. The environment specifications are inc
 
 | Workflow | Environment | Specification |
 |---|---|---|
-| Branch segmentation (MLP and U-Nets), traditional apple detection, evaluation, grid search, and tests | `mma3001` | [`environment.yaml`](environment.yaml) |
-| RF-DETR training and instance-segmentation inference | `rfdetr` | [`rfdetr_environment.yaml`](rfdetr_environment.yaml) |
+| Branch segmentation (MLP and U-Nets), traditional apple detection, evaluation, grid search, and tests | `mma3001` | [`environment.yml`](environment.yml) |
+| RF-DETR training and instance-segmentation inference | `rfdetr` | [`rfdetr_environment.yml`](rfdetr_environment.yml) |
 
 ### Create the MMA3001 environment
 
 ```powershell
-conda env create -f environment.yaml
+conda env create -f environment.yml
 conda activate mma3001
 ```
 
@@ -45,7 +45,7 @@ python src/compare_apple_detectors.py --max-distance 30 --thresholds 10 20 30 40
 ### Create the RF-DETR environment
 
 ```powershell
-conda env create -f rfdetr_environment.yaml
+conda env create -f rfdetr_environment.yml
 conda activate rfdetr
 ```
 
@@ -261,7 +261,20 @@ It includes all-frame detection against Git HEAD, saved-output checks and a curr
 
 ## HTML documentation
 
-The existing Sphinx site covers branch segmentation; root/source/output READMEs cover apple workflows. See [build instructions](docs/README.md). After a local build, open `docs/\_build/html/index.html`; HTML is generated and not included in Git. Generate and inspect the HTML site locally before submission; an HTML build is not verified by this README.
+The Sphinx site includes all 11 maintained `src/` modules, using static AST extraction of signatures and existing docstrings. No project modules are imported. Open [submitted HTML](docs/html/index.html) directly in a browser; keep the entire `docs/html/` directory together for submission. It is outside the ignored build directory.
+
+Rebuild from the repository root using the existing `mma3001` environment (Sphinx/MyST must already be available):
+
+```powershell
+conda run --no-capture-output -n mma3001 python -m sphinx -E -a -W --keep-going -c docs/static_config -b html docs/source docs/_build/html
+conda run --no-capture-output -n mma3001 python -m sphinx -E -a -W --keep-going -c docs/static_config -b html -d docs/_build/submission-doctrees docs/source docs/html
+```
+
+Open `docs/_build/html/index.html` for the build copy or `docs/html/index.html` for the submission copy. See [documentation instructions](docs/README.md) for details. No package installation, training or inference is part of these commands.
+
+## Licence
+
+[MIT License](LICENSE), copyright 2026 Chan Lik Wai, applies only to original project code owned by the repository author. It does not claim ownership of or grant redistribution rights for university-supplied orchard datasets, Roboflow datasets, third-party model weights, RF-DETR code or pretrained weights, or other externally licensed materials. Those remain subject to their respective terms and permissions. No existing project licence or explicit conflicting source notice was found; dataset provenance and third-party redistribution permissions remain unverified.
 
 ## Limitations and next steps
 
