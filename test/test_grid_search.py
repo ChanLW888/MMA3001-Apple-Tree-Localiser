@@ -1,4 +1,4 @@
-﻿"""Lightweight grid tests: no dataset access or production main invocation."""
+"""Synthetic grid tests, including real main orchestration with mocked I/O only."""
 import math
 from pathlib import Path
 import tempfile
@@ -10,7 +10,9 @@ from helpers import grid as g, detector as d, comparison as c
 
 
 class GridTests(unittest.TestCase):
+    """Verify enumeration and mocked resume; passing bug characterization is not a fix."""
     def test_full_cartesian_grid(self):
+        """Enumerate all 5184 unique IDs/configurations and recover every search-space value."""
         combinations=list(g.combinations())
         expected=math.prod(map(len,g.GRID.values()))
         self.assertEqual(expected,5184)
@@ -21,10 +23,12 @@ class GridTests(unittest.TestCase):
             self.assertEqual({params[key] for _,params in combinations},set(values))
 
     def test_baseline_matches_actual_detector_and_occurs_once(self):
+        """Check baseline constants against live detector defaults and exact grid membership."""
         self.assertEqual(g.BASELINE,{key:getattr(d,key) for key in g.GRID})
         self.assertEqual(sum(params == g.BASELINE for _,params in g.combinations()),1)
 
     def test_only_traditional_parameters_vary(self):
+        """Keep branch dilation and overlap fixed outside the seven-parameter grid."""
         self.assertEqual(set(g.GRID), {'RED_THRESHOLD','RED_DOMINANCE','MIN_APPLE_AREA',
             'MAX_APPLE_AREA','MIN_CIRCULARITY','MAX_ASPECT_RATIO','MORPH_KERNEL_SIZE'})
         self.assertNotIn('BRANCH_DILATION',g.GRID)
@@ -32,6 +36,7 @@ class GridTests(unittest.TestCase):
         self.assertEqual((d.BRANCH_DILATION,d.MIN_BRANCH_OVERLAP),(100,.05))
 
     def test_tiny_cartesian_configuration(self):
+        """Check stable run numbering and Cartesian order using a patched two-by-two grid."""
         with patch.object(g,'GRID',{'RED_THRESHOLD':[30,50],'MORPH_KERNEL_SIZE':[3,5]}):
             self.assertEqual(list(g.combinations()),[
                 ('grid_0000',{'RED_THRESHOLD':30,'MORPH_KERNEL_SIZE':3}),
@@ -40,6 +45,7 @@ class GridTests(unittest.TestCase):
                 ('grid_0003',{'RED_THRESHOLD':50,'MORPH_KERNEL_SIZE':5})])
 
     def test_objective_directions(self):
+        """Maximise agreement, minimise errors and minimise absolute signed count bias."""
         mapping={'f1':'f1_relative_to_rfdetr','precision':'precision_relative_to_rfdetr',
                  'recall':'recall_relative_to_rfdetr','mae':'count_mae','rmse':'count_rmse',
                  'centroid':'mean_centroid_error_px','bbox_iou':'mean_matched_bbox_iou'}
@@ -51,16 +57,19 @@ class GridTests(unittest.TestCase):
                            g.score({'mean_signed_count_error':2},'count_bias'))
 
     def test_invalid_numeric_scores_rank_last(self):
+        """Orient invalid and nonfinite numeric scores to negative infinity in both directions."""
         for value in ('',None,float('nan'),float('inf')):
             self.assertEqual(g.numeric({'x':value},'x'),float('-inf'))
             self.assertEqual(g.numeric({'x':value},'x',False),float('-inf'))
 
     def test_baseline_wins_tie(self):
+        """Prefer exact baseline values over a lexically earlier tied configuration."""
         baseline=dict(g.BASELINE,run_id='z',f1_relative_to_rfdetr=.5)
         other=dict(baseline,run_id='a',RED_THRESHOLD=30)
         self.assertIs(g.select_best([other,baseline],'f1'),baseline)
 
     def test_tree_partition_is_grouped_and_deterministic(self):
+        """Keep three frames per synthetic tree together and observe both hash partitions."""
         groups={}
         for tree in range(100):
             parts={g.tree_partition(f'R1N{tree}_Summer_RGB-{time}.png') for time in range(3)}
@@ -71,6 +80,7 @@ class GridTests(unittest.TestCase):
                          {t for t,p in groups.items() if p=='development'})
 
     def test_result_persistence_schema_and_resume_ids(self):
+        """Round-trip two rows and reject an incompatible resume CSV header."""
         with tempfile.TemporaryDirectory() as tmp:
             path=Path(tmp)/'results.csv'
             self.assertEqual(g.load_rows(path),[])
@@ -87,6 +97,7 @@ class GridTests(unittest.TestCase):
                 g.load_rows(path)
 
     def test_configuration_evaluation_records_metrics_without_outputs(self):
+        """Use a stub detector on a two-pixel frame to check metrics and in-memory constants."""
         predictor=SimpleNamespace(find_apple_candidates=Mock(return_value=[]),
                                   instance_rows=d.instance_rows,BRANCH_DILATION=100,
                                   MIN_BRANCH_OVERLAP=.05)
@@ -101,6 +112,7 @@ class GridTests(unittest.TestCase):
         predictor.find_apple_candidates.assert_called_once()
 
     def test_missing_dynamic_module(self):
+        """Raise FileNotFoundError before attempting to import an absent predictor file."""
         with tempfile.TemporaryDirectory() as tmp, self.assertRaises(FileNotFoundError):
             g.load_module(Path(tmp)/'missing.py','missing_grid_test')
     def test_changed_objective_reuses_heldout_known_limitation(self):

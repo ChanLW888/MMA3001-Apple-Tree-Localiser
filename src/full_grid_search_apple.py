@@ -316,6 +316,11 @@ def main():
         Complete traditional RGB/depth/GT triplets are intersected with reference
         count basenames, preserving zero-count images. GT is stretched to RGB
         geometry. Images are cached in RAM unless --no-cache reloads each run.
+        The no-cache path still materialises the entire split as a list; it is
+        not a bounded-memory stream. The preceding iteration's current_frames
+        remains referenced while the next list is built, so peak memory can
+        include two split-sized image lists. The CLI help's RAM-reduction intent
+        has not been established by this implementation.
         RF-DETR CSV predictions are pseudo-reference, never new inference.
 
         Metrics include micro precision/recall/F1, image macro F1, signed and
@@ -448,6 +453,8 @@ def main():
             if run_id in completed:
                 continue
             current_frames = get_frames(split) if args.no_cache else frames
+            # Both modes hold a full split here; no-cache changes reload frequency,
+            # not per-frame streaming or a guaranteed lower peak memory bound.
             metrics, seconds = evaluate_configuration(params, current_frames, names,
                                 predictor, comparator, reference, args.max_distance)
             append_row(result_path, {'run_id':run_id, 'split':split, **params, **metrics,

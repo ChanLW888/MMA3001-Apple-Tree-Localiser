@@ -96,6 +96,8 @@ python src/apple_predictor_v1.py
 
    The ellipse is MORPH_KERNEL_SIZE pixels wide/high. Morphology may merge nearby
    regions; components are candidates rather than guaranteed apples.
+   Closing can fill non-red or invalid-depth pixels after the initial validity
+   test; final component pixels are not guaranteed individually depth-valid.
 
    :param mask: numpy.ndarray; uint8 [H, W] binary red mask.
 
@@ -108,10 +110,11 @@ python src/apple_predictor_v1.py
 
    Dilate labelled branch pixels into a proximity region.
 
-   BRANCH_DILATION is ellipse diameter in source-image pixels, not radius. Uses
-   ground-truth branches, not predicted segmentation.
+   BRANCH_DILATION is ellipse diameter in source-image pixels, not radius.
+   The default entry point uses ground truth; the predicted comparison driver
+   supplies network masks instead.
 
-   :param gt: numpy.ndarray; aligned [H, W] branch GT, foreground >0.
+   :param gt: numpy.ndarray; aligned [H, W] branch mask, foreground >0; GT or predicted.
 
    :returns: uint8 [H, W] zone in {0, 1}.
    :rtype: numpy.ndarray
@@ -128,7 +131,7 @@ python src/apple_predictor_v1.py
 
    :param rgb: numpy.ndarray; uint8 [H, W, 3] RGB.
    :param depth: numpy.ndarray; aligned [H, W] depth-validity intensities.
-   :param gt: numpy.ndarray; aligned [H, W] branch ground truth.
+   :param gt: numpy.ndarray; aligned [H, W] branch mask; the gt argument name is historical.
 
    :returns:
 

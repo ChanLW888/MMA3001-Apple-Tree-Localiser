@@ -1,53 +1,94 @@
 MMA3001 synthetic unit-test execution
-UTC: 2026-10-22T15:46:50.453956+00:00
+UTC: 2026-10-22T18:04:32.424708+00:00
 Interpreter: C:\Users\Chan\anaconda3\envs\mma3001\python.exe
+Python: 3.13.15 | packaged by Anaconda, Inc. | (main, Aug 14 2026, 17:17:48) [MSC v.1942 64 bit (AMD64)]
+Platform: Windows-11-10.0.26200-SP0
 Environment: mma3001
 Command: python -m unittest discover -s test -p "test_*.py" -v
 
-test_beyond_distance (test_apple_comparison.ComparisonTests.test_beyond_distance) ... ok
-test_count_errors (test_apple_comparison.ComparisonTests.test_count_errors) ... ok
-test_counts_include_zero_and_validate_discrepancy (test_apple_comparison.ComparisonTests.test_counts_include_zero_and_validate_discrepancy) ... ok
-test_csv_round_trip_and_geometry_duplicates (test_apple_comparison.ComparisonTests.test_csv_round_trip_and_geometry_duplicates) ... ok
-test_duplicate_ids_rejected (test_apple_comparison.ComparisonTests.test_duplicate_ids_rejected) ... ok
-test_empty_detections_and_zero_image (test_apple_comparison.ComparisonTests.test_empty_detections_and_zero_image) ... ok
-test_exact_filename_matching (test_apple_comparison.ComparisonTests.test_exact_filename_matching) ... ok
-test_exact_match (test_apple_comparison.ComparisonTests.test_exact_match) ... ok
-test_inclusive_distance (test_apple_comparison.ComparisonTests.test_inclusive_distance) ... ok
-test_inclusive_iou (test_apple_comparison.ComparisonTests.test_inclusive_iou) ... ok
-test_invalid_detection_records (test_apple_comparison.ComparisonTests.test_invalid_detection_records) ... ok
-test_invalid_thresholds (test_apple_comparison.ComparisonTests.test_invalid_thresholds) ... ok
-test_maximum_cardinality_before_distance (test_apple_comparison.ComparisonTests.test_maximum_cardinality_before_distance) ... ok
-test_missing_csv_header (test_apple_comparison.ComparisonTests.test_missing_csv_header) ... ok
-test_one_to_one (test_apple_comparison.ComparisonTests.test_one_to_one) ... ok
-test_precision_recall_f1 (test_apple_comparison.ComparisonTests.test_precision_recall_f1) ... ok
-test_bbox (test_apple_detector.DetectorTests.test_bbox) ... ok
-test_branch_dilation (test_apple_detector.DetectorTests.test_branch_dilation) ... ok
-test_branch_rejection (test_apple_detector.DetectorTests.test_branch_rejection) ... ok
-test_centroid (test_apple_detector.DetectorTests.test_centroid) ... ok
-test_instance_csv_export_and_zero_count (test_apple_detector.DetectorTests.test_instance_csv_export_and_zero_count) ... ok
-test_invalid_depth (test_apple_detector.DetectorTests.test_invalid_depth) ... ok
-test_minimum_area_boundary (test_apple_detector.DetectorTests.test_minimum_area_boundary) ... ok
-test_morphology_closes_internal_hole (test_apple_detector.DetectorTests.test_morphology_closes_internal_hole) ... ok
-test_morphology_removes_isolated_noise (test_apple_detector.DetectorTests.test_morphology_removes_isolated_noise) ... ok
-test_red_dominance_and_non_red (test_apple_detector.DetectorTests.test_red_dominance_and_non_red) ... ok
-test_shape_validation (test_apple_detector.DetectorTests.test_shape_validation) ... ok
-test_zero_apples (test_apple_detector.DetectorTests.test_zero_apples) ... ok
-test_baseline_matches_actual_detector_and_occurs_once (test_grid_search.GridTests.test_baseline_matches_actual_detector_and_occurs_once) ... ok
-test_baseline_wins_tie (test_grid_search.GridTests.test_baseline_wins_tie) ... ok
+test_beyond_distance (test_apple_comparison.ComparisonTests.test_beyond_distance)
+Reject the same displacement when tolerance is below five pixels. ... ok
+test_count_errors (test_apple_comparison.ComparisonTests.test_count_errors)
+Check signed bias, MAE and RMSE for frame errors of minus two and plus one. ... ok
+test_counts_include_zero_and_validate_discrepancy (test_apple_comparison.ComparisonTests.test_counts_include_zero_and_validate_discrepancy)
+Preserve zero-count records and reject a conflicting instance record. ... ok
+test_csv_round_trip_and_geometry_duplicates (test_apple_comparison.ComparisonTests.test_csv_round_trip_and_geometry_duplicates)
+Retain duplicate geometry with distinct IDs while reporting the duplicate. ... ok
+test_duplicate_ids_rejected (test_apple_comparison.ComparisonTests.test_duplicate_ids_rejected)
+Reject repeated apple IDs within the same image. ... ok
+test_empty_detections_and_zero_image (test_apple_comparison.ComparisonTests.test_empty_detections_and_zero_image)
+Retain a processed empty frame; undefined F1 is zero and distance is absent. ... ok
+test_exact_filename_matching (test_apple_comparison.ComparisonTests.test_exact_filename_matching)
+Treat differently capitalised basenames as different frame identities. ... ok
+test_exact_match (test_apple_comparison.ComparisonTests.test_exact_match)
+Match coincident centroids even at zero pixel tolerance. ... ok
+test_inclusive_distance (test_apple_comparison.ComparisonTests.test_inclusive_distance)
+Accept a 3-4-5 displacement exactly at the five-pixel matching boundary. ... ok
+test_inclusive_iou (test_apple_comparison.ComparisonTests.test_inclusive_iou)
+Count boundary pixels when computing identical, overlapping and disjoint box IoUs. ... ok
+test_invalid_detection_records (test_apple_comparison.ComparisonTests.test_invalid_detection_records)
+Reject nonfinite coordinates and invalid area, overlap, confidence, boxes and IDs. ... ok
+test_invalid_thresholds (test_apple_comparison.ComparisonTests.test_invalid_thresholds)
+Reject negative, infinite and NaN matching tolerances even for empty lists. ... ok
+test_maximum_cardinality_before_distance (test_apple_comparison.ComparisonTests.test_maximum_cardinality_before_distance)
+Prefer two valid pairs over a closer assignment that leaves a valid match unused. ... ok
+test_missing_csv_header (test_apple_comparison.ComparisonTests.test_missing_csv_header)
+Reject an empty CSV instead of treating missing headers as an empty result. ... ok
+test_one_to_one (test_apple_comparison.ComparisonTests.test_one_to_one)
+Prevent two reference detections from sharing one prediction. ... ok
+test_precision_recall_f1 (test_apple_comparison.ComparisonTests.test_precision_recall_f1)
+Check TP=2, FP=1, FN=2 against independent fraction calculations. ... ok
+test_bbox (test_apple_detector.DetectorTests.test_bbox)
+Recover the synthetic component as x=5, y=4, width=4, height=4. ... ok
+test_branch_dilation (test_apple_detector.DetectorTests.test_branch_dilation)
+Verify a diameter-three ellipse produces a five-pixel cross, not a radius-three disk. ... ok
+test_branch_rejection (test_apple_detector.DetectorTests.test_branch_rejection)
+Reject every candidate when the aligned branch mask is empty. ... ok
+test_centroid (test_apple_detector.DetectorTests.test_centroid)
+Locate the component pixel mean at fractional original-image coordinates. ... ok
+test_instance_csv_export_and_zero_count (test_apple_detector.DetectorTests.test_instance_csv_export_and_zero_count)
+Check inclusive boxes, blank confidence and zero-count frames in temporary CSVs. ... ok
+test_invalid_depth (test_apple_detector.DetectorTests.test_invalid_depth)
+Accept only positive stored depth values, including signed-array edge cases. ... ok
+test_minimum_area_boundary (test_apple_detector.DetectorTests.test_minimum_area_boundary)
+Accept area equal to the lower bound and reject it when the bound increases. ... ok
+test_morphology_closes_internal_hole (test_apple_detector.DetectorTests.test_morphology_closes_internal_hole)
+Fill a one-pixel internal hole with a diameter-three elliptical kernel. ... ok
+test_morphology_removes_isolated_noise (test_apple_detector.DetectorTests.test_morphology_removes_isolated_noise)
+Remove a single noise pixel while preserving the centre of a larger region. ... ok
+test_red_dominance_and_non_red (test_apple_detector.DetectorTests.test_red_dominance_and_non_red)
+Reject non-red pixels and exact red/dominance boundaries; comparisons are strict. ... ok
+test_shape_validation (test_apple_detector.DetectorTests.test_shape_validation)
+Reject mismatched RGB/depth grids before connected-component processing. ... ok
+test_zero_apples (test_apple_detector.DetectorTests.test_zero_apples)
+Return no candidates or instance rows for an image without red foreground. ... ok
+test_baseline_matches_actual_detector_and_occurs_once (test_grid_search.GridTests.test_baseline_matches_actual_detector_and_occurs_once)
+Check baseline constants against live detector defaults and exact grid membership. ... ok
+test_baseline_wins_tie (test_grid_search.GridTests.test_baseline_wins_tie)
+Prefer exact baseline values over a lexically earlier tied configuration. ... ok
 test_changed_objective_reuses_heldout_known_limitation (test_grid_search.GridTests.test_changed_objective_reuses_heldout_known_limitation)
 Reproduce stale held-out reuse with tiny mocked data and temporary files. ... ok
-test_configuration_evaluation_records_metrics_without_outputs (test_grid_search.GridTests.test_configuration_evaluation_records_metrics_without_outputs) ... ok
-test_full_cartesian_grid (test_grid_search.GridTests.test_full_cartesian_grid) ... ok
-test_invalid_numeric_scores_rank_last (test_grid_search.GridTests.test_invalid_numeric_scores_rank_last) ... ok
-test_missing_dynamic_module (test_grid_search.GridTests.test_missing_dynamic_module) ... ok
-test_objective_directions (test_grid_search.GridTests.test_objective_directions) ... ok
-test_only_traditional_parameters_vary (test_grid_search.GridTests.test_only_traditional_parameters_vary) ... ok
-test_result_persistence_schema_and_resume_ids (test_grid_search.GridTests.test_result_persistence_schema_and_resume_ids) ... ok
-test_tiny_cartesian_configuration (test_grid_search.GridTests.test_tiny_cartesian_configuration) ... ok
-test_tree_partition_is_grouped_and_deterministic (test_grid_search.GridTests.test_tree_partition_is_grouped_and_deterministic) ... ok
+test_configuration_evaluation_records_metrics_without_outputs (test_grid_search.GridTests.test_configuration_evaluation_records_metrics_without_outputs)
+Use a stub detector on a two-pixel frame to check metrics and in-memory constants. ... ok
+test_full_cartesian_grid (test_grid_search.GridTests.test_full_cartesian_grid)
+Enumerate all 5184 unique IDs/configurations and recover every search-space value. ... ok
+test_invalid_numeric_scores_rank_last (test_grid_search.GridTests.test_invalid_numeric_scores_rank_last)
+Orient invalid and nonfinite numeric scores to negative infinity in both directions. ... ok
+test_missing_dynamic_module (test_grid_search.GridTests.test_missing_dynamic_module)
+Raise FileNotFoundError before attempting to import an absent predictor file. ... ok
+test_objective_directions (test_grid_search.GridTests.test_objective_directions)
+Maximise agreement, minimise errors and minimise absolute signed count bias. ... ok
+test_only_traditional_parameters_vary (test_grid_search.GridTests.test_only_traditional_parameters_vary)
+Keep branch dilation and overlap fixed outside the seven-parameter grid. ... ok
+test_result_persistence_schema_and_resume_ids (test_grid_search.GridTests.test_result_persistence_schema_and_resume_ids)
+Round-trip two rows and reject an incompatible resume CSV header. ... ok
+test_tiny_cartesian_configuration (test_grid_search.GridTests.test_tiny_cartesian_configuration)
+Check stable run numbering and Cartesian order using a patched two-by-two grid. ... ok
+test_tree_partition_is_grouped_and_deterministic (test_grid_search.GridTests.test_tree_partition_is_grouped_and_deterministic)
+Keep three frames per synthetic tree together and observe both hash partitions. ... ok
 
 ----------------------------------------------------------------------
-Ran 40 tests in 0.061s
+Ran 40 tests in 0.057s
 
 OK
 

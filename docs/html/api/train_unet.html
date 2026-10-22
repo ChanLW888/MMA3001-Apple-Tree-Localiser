@@ -16,23 +16,23 @@
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="winter_inference" href="winter_inference.html" />
     <link rel="prev" title="train_improved_unet" href="train_improved_unet.html" />
-   
-  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
-  
 
-  
-  
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+
+
+
+
 
   </head><body>
-  
+
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          
+
 
           <div class="body" role="main">
-            
+
   <section id="module-train_unet">
 <span id="train-unet"></span><h1>train_unet<a class="headerlink" href="#module-train_unet" title="Link to this heading">¶</a></h1>
 <p>Source: <code class="docutils literal notranslate"><span class="pre">src/train_unet.py</span></code>.</p>
@@ -42,6 +42,8 @@
 normalisation; grayscale depth is /255, not metres. GT must already match the square
 grid. Produces raw [B, 1, H, W] branch logits. Uses plain BCE, Adam and validation-Dice
 checkpoint selection. Pretraining may retrieve uncached weights.</p>
+<p>Writes resnet34_unet_best.pth, history.csv, val_metrics.csv and visualisations
+under outputs/resnet34_unet_crop_trainval_output by default, overwriting names.</p>
 <p class="rubric">Example</p>
 <p>python src/train_unet.py –data-root data/Organised –no-pretrained</p>
 <dl class="py function">
@@ -478,7 +480,7 @@ set. Use positive epochs and validation fraction strictly between 0 and 1.</p>
 
 
           </div>
-          
+
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
@@ -504,13 +506,16 @@ set. Use positive epochs and validation fraction strictly between 0 and 1.</p>
 <script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
 <p class="caption" role="heading"><span class="caption-text">Project documentation</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../reviewer_start.html">Reviewer starting point and reproduction levels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../workflows.html">Apple workflows and environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../predicted_branches.html">Predicted branches versus GT branches</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../data_and_preprocessing.html">Data and preprocessing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../models.html">Model architectures</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../training_and_evaluation.html">Training and evaluation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Source API reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="apple_predictor_predicted_compare.html">apple_predictor_predicted_compare</a></li>
 <li class="toctree-l2"><a class="reference internal" href="apple_predictor_v1.html">apple_predictor_v1</a></li>
 <li class="toctree-l2"><a class="reference internal" href="apple_segmenter_train.html">apple_segmenter_train</a></li>
 <li class="toctree-l2"><a class="reference internal" href="apple_segmenter_v1.html">apple_segmenter_v1</a></li>
@@ -551,18 +556,18 @@ set. Use positive epochs and validation fraction strictly between 0 and 1.</p>
     </div>
     <div class="footer">
       &#169;2026, Chan Lik Wai.
-      
+
       |
       Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
       &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
-      
+
       |
       <a href="../_sources/api/train_unet.rst.txt"
           rel="nofollow">Page source</a>
     </div>
 
-    
 
-    
+
+
   </body>
 </html>

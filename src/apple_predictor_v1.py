@@ -157,6 +157,8 @@ def clean_red_mask(mask):
 
     The ellipse is MORPH_KERNEL_SIZE pixels wide/high. Morphology may merge nearby
     regions; components are candidates rather than guaranteed apples.
+    Closing can fill non-red or invalid-depth pixels after the initial validity
+    test; final component pixels are not guaranteed individually depth-valid.
 
     Args:
         mask: numpy.ndarray; uint8 [H, W] binary red mask.
@@ -178,11 +180,12 @@ def clean_red_mask(mask):
 def create_branch_zone(gt):
     """Dilate labelled branch pixels into a proximity region.
 
-    BRANCH_DILATION is ellipse diameter in source-image pixels, not radius. Uses
-    ground-truth branches, not predicted segmentation.
+    BRANCH_DILATION is ellipse diameter in source-image pixels, not radius.
+    The default entry point uses ground truth; the predicted comparison driver
+    supplies network masks instead.
 
     Args:
-        gt: numpy.ndarray; aligned [H, W] branch GT, foreground >0.
+        gt: numpy.ndarray; aligned [H, W] branch mask, foreground >0; GT or predicted.
 
     Returns:
         numpy.ndarray: uint8 [H, W] zone in {0, 1}.
@@ -206,7 +209,7 @@ def find_apple_candidates(rgb, depth, gt):
     Args:
         rgb: numpy.ndarray; uint8 [H, W, 3] RGB.
         depth: numpy.ndarray; aligned [H, W] depth-validity intensities.
-        gt: numpy.ndarray; aligned [H, W] branch ground truth.
+        gt: numpy.ndarray; aligned [H, W] branch mask; the gt argument name is historical.
 
     Returns:
         list[dict]: label, area (pixels), bbox (x, y, width, height), centroid (x,

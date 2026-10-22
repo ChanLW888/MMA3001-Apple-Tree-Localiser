@@ -14,6 +14,7 @@ paths on import. Static extraction avoids these side effects for every module.
 .. toctree::
    :maxdepth: 1
 
+   apple_predictor_predicted_compare
    apple_predictor_v1
    apple_segmenter_train
    apple_segmenter_v1

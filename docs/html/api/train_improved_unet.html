@@ -16,23 +16,23 @@
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="train_unet" href="train_unet.html" />
     <link rel="prev" title="train_baseline" href="train_baseline.html" />
-   
-  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
-  
 
-  
-  
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+
+
+
+
 
   </head><body>
-  
+
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          
+
 
           <div class="body" role="main">
-            
+
   <section id="module-train_improved_unet">
 <span id="train-improved-unet"></span><h1>train_improved_unet<a class="headerlink" href="#module-train_improved_unet" title="Link to this heading">¶</a></h1>
 <p>Source: <code class="docutils literal notranslate"><span class="pre">src/train_improved_unet.py</span></code>.</p>
@@ -42,6 +42,9 @@
 Uses plain BCE, AdamW (weight decay 1e-4), a validation-Dice plateau scheduler and
 paired flips. RGB brightness/contrast perturbation operates after normalisation, leaving
 depth unchanged. Architecture intent does not establish improved measured accuracy.</p>
+<p>Requires complete summer RGB/depth/branch-GT triplets. Writes the best checkpoint,
+history.csv, val_metrics.csv and validation panels under
+outputs/improved_resnet34_unet_output by default; named files can be overwritten.</p>
 <p class="rubric">Example</p>
 <p>python src/train_improved_unet.py –data-root data/Organised –no-pretrained</p>
 <dl class="py function">
@@ -634,7 +637,7 @@ set. Use positive epochs and validation fraction strictly between 0 and 1.</p>
 
 
           </div>
-          
+
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
@@ -660,13 +663,16 @@ set. Use positive epochs and validation fraction strictly between 0 and 1.</p>
 <script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
 <p class="caption" role="heading"><span class="caption-text">Project documentation</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../reviewer_start.html">Reviewer starting point and reproduction levels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../workflows.html">Apple workflows and environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../predicted_branches.html">Predicted branches versus GT branches</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../data_and_preprocessing.html">Data and preprocessing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../models.html">Model architectures</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../training_and_evaluation.html">Training and evaluation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Source API reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="apple_predictor_predicted_compare.html">apple_predictor_predicted_compare</a></li>
 <li class="toctree-l2"><a class="reference internal" href="apple_predictor_v1.html">apple_predictor_v1</a></li>
 <li class="toctree-l2"><a class="reference internal" href="apple_segmenter_train.html">apple_segmenter_train</a></li>
 <li class="toctree-l2"><a class="reference internal" href="apple_segmenter_v1.html">apple_segmenter_v1</a></li>
@@ -707,18 +713,18 @@ set. Use positive epochs and validation fraction strictly between 0 and 1.</p>
     </div>
     <div class="footer">
       &#169;2026, Chan Lik Wai.
-      
+
       |
       Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
       &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
-      
+
       |
       <a href="../_sources/api/train_improved_unet.rst.txt"
           rel="nofollow">Page source</a>
     </div>
 
-    
 
-    
+
+
   </body>
 </html>

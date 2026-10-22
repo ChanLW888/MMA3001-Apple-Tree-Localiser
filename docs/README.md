@@ -1,6 +1,9 @@
 # HTML source documentation
 
-Sphinx with MyST and Napoleon formats the existing project guides and statically extracted API documentation for all 11 maintained Python modules in `src/`. The AST extractor includes classes, functions, methods and nested helpers, preserving existing docstring parameter, return and exception descriptions. Missing docstrings are explicitly labelled. It never imports project source modules or evaluates their defaults, decorators or annotations.
+Begin with the [reviewer route](source/reviewer_start.md) for a concise guide to
+data-free verification, full reproduction prerequisites and claim boundaries.
+
+Sphinx with MyST and Napoleon formats the existing project guides and statically extracted API documentation for all 12 maintained Python modules in `src/`. The AST extractor includes classes, functions, methods and nested helpers, preserving existing docstring parameter, return and exception descriptions. Missing docstrings are explicitly labelled. It never imports project source modules or evaluates their defaults, decorators or annotations.
 
 ## Build and view
 
@@ -17,7 +20,7 @@ The existing requirements are listed in `docs/requirements-docs.txt`; no package
 
 ## Configuration and coverage
 
-The new [build configuration](static_config/conf.py) reuses the unchanged original `source/conf.py`, then adds static API generation and project metadata. Always use `-c docs/static_config`; the original configuration alone does not regenerate APIs. Every build regenerates `source/api/*.rst` from the current `src/` inventory. Do not edit generated API pages manually.
+The new [build configuration](static_config/conf.py) reuses the base `source/conf.py`, then adds static API generation and project metadata. Always use `-c docs/static_config`; the original configuration alone does not regenerate APIs. Every build regenerates `source/api/*.rst` from the current `src/` inventory. Do not edit generated API pages manually.
 
 The landing page links preserved branch guides, the apple workflow/environment guide and the API index. Both `mma3001` and `rfdetr` are explained in [workflows](source/workflows.md). Runtime compatibility, dynamic/inherited APIs and correctness of existing docstrings are not verified by static extraction. No training, inference or preprocessing runs during a documentation build.
 
@@ -29,3 +32,10 @@ The maintained API inventory includes `winter_inference` and `full_grid_search_a
 The absent former optimiser is excluded. The grid API documents every helper,
 selection direction, fixed branch settings, caching, resume fingerprints and the
 known stale held-out result issue. Unit checks do not validate model accuracy.
+
+
+The new [predicted branch guide](source/predicted_branches.md) and its API page are
+part of the site. [Final audit](final_audit.md) records rubric evidence and remaining
+submission requirements; [AI disclosure](ai_disclosure.md) identifies outstanding
+student reflection. Historical verification claims are superseded by this audit's
+actual rerun evidence.

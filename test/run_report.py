@@ -1,14 +1,25 @@
-"""Capture the requested unittest command verbatim without shell stderr rewriting."""
+"""Capture complete synthetic unittest discovery and actual execution metadata.
+
+Run from the repository root: python test/run_report.py. Starts a subprocess with
+the current interpreter, captures combined stdout/stderr and overwrites
+test/test_report.txt. Propagates the process exit code. Import also executes this
+workflow, so this is a command script rather than a passive utility module.
+No orchard inputs, trained models or historical result files are used by the suite.
+"""
 import datetime
 from pathlib import Path
 import subprocess
 import sys
 import re
+import os
+import platform
 command=[sys.executable,'-m','unittest','discover','-s','test','-p','test_*.py','-v']
 result=subprocess.run(command,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
 report='MMA3001 synthetic unit-test execution\n'
 report+='UTC: '+datetime.datetime.now(datetime.timezone.utc).isoformat()+'\n'
-report+='Interpreter: '+sys.executable+'\nEnvironment: mma3001\n'
+report+='Interpreter: '+sys.executable+'\n'
+report+='Python: '+sys.version.replace('\n',' ')+'\nPlatform: '+platform.platform()+'\n'
+report+='Environment: '+os.environ.get('CONDA_DEFAULT_ENV','not reported by Conda')+'\n'
 report+='Command: python -m unittest discover -s test -p "test_*.py" -v\n\n'
 report+=result.stdout
 match=re.search(r'Ran (\d+) tests?',result.stdout)

@@ -1,0 +1,55 @@
+{
+  "device": "cpu",
+  "inputs": "synthetic temporary RGB-D and GT; real local branch checkpoints",
+  "checks": [
+    {
+      "checkpoint": "outputs/pixel_mlp_crop_trainval/pixel_mlp_best.pth",
+      "input_size": 256,
+      "strict_load": true,
+      "finite_logit_shape": [
+        1,
+        1,
+        256,
+        256
+      ],
+      "checkpoint_sha256": "241f07229ef5f86c0f079842f09894aa65f47cd65885d5f5c67f71c6bdde9829"
+    },
+    {
+      "checkpoint": "outputs/resnet34_unet_crop_trainval_output/resnet34_unet_best.pth",
+      "input_size": 256,
+      "strict_load": true,
+      "finite_logit_shape": [
+        1,
+        1,
+        256,
+        256
+      ],
+      "checkpoint_sha256": "ce661d4056e2bd686b290510b34b7febe43be5f65acde98707ee8b4b7cabcd58"
+    },
+    {
+      "improved_checkpoint": "outputs\\improved_resnet34_unet_output\\improved_resnet34_unet_best.pth",
+      "input_size": 256,
+      "predicted_mask_shape": [
+        256,
+        256
+      ],
+      "binary_values": [
+        0,
+        255
+      ],
+      "fresh_predictions_exported": true,
+      "cached_predictions_exported": true,
+      "gt_control_count": 1,
+      "both_comparison_reports": true,
+      "checkpoint_sha256": "3eaa6a2db2ec9a4a3d61c5e974d7fb17a8465e5b3daf700c687636acba83ac91"
+    }
+  ],
+  "report_generated_utc": "2026-10-22T18:01:50.045243+00:00",
+  "interpreter_environment": "mma3001; Python 3.13.15; Windows; CPU",
+  "limitations": [
+    "Synthetic self-reference is not apple accuracy evidence.",
+    "No orchard inference, training or RF-DETR inference.",
+    "Separate smoke verification; not additional unittest cases.",
+    "All test images and model exports were temporary; existing project inputs and results were read only."
+  ]
+}

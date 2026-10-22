@@ -7,6 +7,9 @@ field of view. The MLP has no spatial context. Uses positive-weight-12 BCE, Adam
 sample splitting and best-validation-Dice selection. Validation is not independent
 testing.
 
+Writes pixel_mlp_best.pth, history.csv, val_metrics.csv and validation panels to
+outputs/pixel_mlp_crop_trainval by default; named outputs can be overwritten.
+
 Example:
     python src/train_baseline.py --data-root data/Organised
 """

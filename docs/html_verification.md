@@ -1,71 +1,75 @@
-# Final documentation and preservation verification
+# Documentation verification, 23 October 2026
 
-Verified against a byte-hash/source snapshot captured from the working tree before edits.
-The pre-existing deletion of `src/optimise_apple_predictor.py` was preserved.
+The [final audit](final_audit.md) records the official brief/rubric, files reviewed,
+changes, measured snapshots and unresolved issues. This supersedes the previous
+session's verification report. Results below are actual checks in this checkout.
 
-## Source audit
+| Check | Result |
+|---|---|
+| Maintained Python compilation, in memory | 21/21 passed without executing modules |
+| Production inventory | 12 modules, 142 functions/methods/helpers, 17 classes |
+| All maintained definitions, tests/config/verifier included | 213 definitions; no missing module/definition docstrings |
+| Existing missing definition docstrings corrected | 48; eight existing driver docstrings also substantially completed |
+| Synthetic suite | 40 passed; zero failures/errors/skips |
+| CLI help | Seven argparse entry points exited zero |
+| Sphinx | 9.1.0; strict builds of both build/submission copies succeeded without warnings |
+| HTML API | 12/12 modules indexed; all 159 production definition anchors present |
+| Parameter documentation | All 286 non-self argument labels present; all 273 production parameter fields generated |
+| Generated HTML | 25 pages; 1,313 local href/src references and fragments resolved |
+| Maintained Markdown | 17 files; 73 local inline file links resolved |
+| Whitespace | git diff --check passed after template whitespace normalisation |
+| Temporary smoke checks | Central projection/padding, cache encoding, zero-detection comparator/report generation passed |
 
-| Module | Functions/classes | Missing docstrings | AST unchanged |
-|---|---:|---:|---|
-| `src/apple_predictor_v1.py` | 16 | 0 | Yes |
-| `src/apple_segmenter_train.py` | 1 | 0 | Yes |
-| `src/apple_segmenter_v1.py` | 9 | 0 | Yes |
-| `src/compare_apple_detectors.py` | 10 | 0 | Yes |
-| `src/dataset_organiser.py` | 1 | 0 | Yes |
-| `src/full_grid_search_apple.py` | 13 | 0 | Yes |
-| `src/preprocess_roboflow_dataset.py` | 2 | 0 | Yes |
-| `src/train_baseline.py` | 18 | 0 | Yes |
-| `src/train_improved_unet.py` | 29 | 0 | Yes |
-| `src/train_unet.py` | 19 | 0 | Yes |
-| `src/winter_inference.py` | 32 | 0 | Yes |
+Commands from the repository root:
 
-All 11 source modules compiled in memory without importing them. Executable ASTs
-and non-docstring/non-comment tokens match the initial working tree.
+```powershell
+conda run --no-capture-output -n mma3001 python test/run_report.py
+conda run --no-capture-output -n mma3001 python docs/verify_documentation.py
+conda run --no-capture-output -n mma3001 python -m sphinx -E -a -W --keep-going -c docs/static_config -b html docs/source docs/_build/html
+conda run --no-capture-output -n mma3001 python -m sphinx -E -a -W --keep-going -c docs/static_config -b html -d docs/_build/submission-doctrees docs/source docs/html
+git diff --check
+```
 
-## Protected files
+The verifier prints current counts and failure lists; future additions change counts.
+It checks local inline Markdown file links and HTML href/src targets/fragments.
+External URLs, reference-style Markdown/heading anchors, CSS url() and GUI/JavaScript
+behaviour are outside its scope. Static extraction excludes inherited/dynamic
+third-party APIs. Actual test output, timestamp, interpreter, Python, platform,
+Conda environment and exit code are in [test report](../test/test_report.txt).
 
-16991 snapshotted data/output/environment files retain their original SHA-256 hashes.
-Only `outputs/README.md` was intentionally edited under outputs. Neither Conda YAML was changed.
-Externally observed changes during this session: ['outputs\\apple_grid_search\\all_experiments.csv'].
-No task command wrote experimental results; changed files were left untouched.
-Cannot certify unchanged experimental results while external writes occur.
+The first strict build failed on an unescaped wildcard; it was corrected and both
+final strict builds passed. Generated template whitespace was corrected through a
+documented Sphinx build-finished hook. No packages were installed. Existing
+mma3001 scientific/documentation imports and rfdetr torch/torchvision/RF-DETR imports
+succeeded. RF-DETR emitted torch JIT deprecation warnings. No clean install was run.
+One concurrent Conda launch encountered a temporary-file lock; both final builds
+were rerun sequentially and exited zero.
 
-## HTML verification
+Original production/test ASTs match after stripping documentation strings and the
+five authorised comparator report-prose constants and three predicted-wrapper
+report expressions. Algorithms/assertions match.
+Documentation infrastructure intentionally adds the Sphinx formatting hook, verifier
+and actual test-report environment metadata. Numerical paths and both YAMLs remain
+unchanged.
 
-22 HTML pages checked; 1105 local links/assets/anchors resolved.
-Every maintained source module has an API page with documented signatures.
-Navigation and required assets are local and available for offline file opening.
-No graphical browser or interactive search behaviour was tested.
-Sphinx 9.1.0 strict rebuild (`-E -a -W --keep-going`) succeeded without warnings.
+18,137 data/output/environment files were snapshotted. One grid-results CSV changed
+without an audit write to it, consistent with an external writer. All other protected
+hashes matched. Historical reports/results, checkpoints and data were preserved;
+no global unchanged-results guarantee is made while that process continues.
 
-## README links
+Second-pass CPU smoke checks strictly loaded all three real local branch checkpoints;
+MLP/basic U-Net produced finite logits on zero tensors, while improved U-Net ran on
+a temporary synthetic RGB-D frame. Fresh/cached predicted exports, GT control,
+metadata and both comparison/report paths succeeded using temporary synthetic
+reference CSVs. All 213 named definitions are listed in `definition_review.tsv`.
+The 40-test suite count is unchanged; these are separate smoke checks.
 
-Checked 34 local README file links.
-Unresolved README links: []
+These checks do not establish orchard/model accuracy, full-dataset model execution,
+GPU timing, clean-clone reproducibility or complete optimisation. The known stale
+held-out reuse is reproduced, not fixed. See the final audit for remaining issues.
 
-## Software verification
-
-40 tests passed; 0 failed, 0 errored, 0 skipped in the existing mma3001 environment.
-See [actual execution output](../test/test_report.txt). No packages installed or changed.
-This does not measure real-world model accuracy. The known stale held-out reuse
-in full_grid_search_apple.main is reproduced and documented, not fixed.
-
-No training, RF-DETR inference, full-dataset optimisation, commit or push occurred.
-
-## Documentation changes
-
-Completed Google-style docstrings in `full_grid_search_apple.py` for
-`load_module`, `file_hash`, `tree_partition`, `combinations`, `append_row`,
-`load_rows`, `numeric`, `score`, `select_best`, `evaluate_configuration`, `main`,
-and the nested `load_one` and `get_frames` helpers. Other source modules already
-had docstrings for all discovered functions/classes; they were left unchanged.
-
-Updated the root, source, output and documentation READMEs and three Sphinx guides.
-Added the independent test suite, fixtures, report runner, test README and real report.
-Regenerated API RST/HTML, including winter inference, and removed stale generated
-pages for the already absent optimiser. The build configuration now avoids emitting
-whitespace-only lines in generated API RST. `git diff --check` passed.
-
-The comparison script's generated report still embeds historical `treeid` commands
-and fixed historical prose. Those strings are executable statements and were left
-unchanged; use the current README commands and independently verify report claims.
+A candidate source-only export (including uncommitted documentation, with ignored
+orchard files/checkpoints/results and Git metadata absent) passed all 40 tests, the
+documentation verifier and a strict HTML rebuild in a temporary directory. This
+used the existing environment; it does not certify clean installation or remote
+repository access. Raw output is retained in `distribution_smoke_report.json`.

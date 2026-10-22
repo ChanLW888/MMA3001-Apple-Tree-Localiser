@@ -15,24 +15,24 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Model architectures" href="models.html" />
-    <link rel="prev" title="Apple workflows and environments" href="workflows.html" />
-   
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
-  
+    <link rel="prev" title="Predicted branches versus GT branches" href="predicted_branches.html" />
 
-  
-  
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+
+
+
+
 
   </head><body>
-  
+
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          
+
 
           <div class="body" role="main">
-            
+
   <section id="data-and-preprocessing">
 <h1>Data and preprocessing<a class="headerlink" href="#data-and-preprocessing" title="Link to this heading">¶</a></h1>
 <section id="pairing">
@@ -55,14 +55,14 @@
 </section>
 <section id="apple-mask-distinctions">
 <h2>Apple mask distinctions<a class="headerlink" href="#apple-mask-distinctions" title="Link to this heading">¶</a></h2>
-<p>Traditional apple detection retains original RGB/depth grids and requires equal spatial dimensions. Depth &gt;0 means valid; GT is full-frame nearest-neighbour resized, with foreground &gt;0. RF-DETR does not use depth; its GT foreground cutoff is &gt;127, default alignment centres a square mask in the original frame, and predicted mode only reads external masks. Both dilate branch regions using a diameter-100 ellipse by default; differing alignment/cutoffs still create different regions.</p>
+<p>Traditional apple detection retains original RGB/depth grids and requires equal spatial dimensions. Depth &gt;0 means valid; GT is full-frame nearest-neighbour resized, with foreground &gt;0. RF-DETR does not use depth; its GT foreground cutoff is &gt;127, default alignment centres a square mask in the original frame, and its predicted mode reads exported masks. The predicted comparison driver instead runs the improved U-Net or reuses square masks and projects them centrally; its optional GT control also thresholds &gt;127. Both dilate branch regions using a diameter-100 ellipse by default; differing alignment/cutoffs still create different regions.</p>
 <p>Branch GT is not apple-instance annotation. COCO files may contain apple annotations, but authorship, frame correspondence and train/evaluation separation require verification. RF-DETR detections used for comparison are pseudo-ground truth and do not establish real accuracy.</p>
 </section>
 </section>
 
 
           </div>
-          
+
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
@@ -88,8 +88,10 @@
 <script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
 <p class="caption" role="heading"><span class="caption-text">Project documentation</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="reviewer_start.html">Reviewer starting point and reproduction levels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="workflows.html">Apple workflows and environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="predicted_branches.html">Predicted branches versus GT branches</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Data and preprocessing</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#pairing">Pairing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#tensor-contract">Tensor contract</a></li>
@@ -106,7 +108,7 @@
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="workflows.html" title="previous chapter">Apple workflows and environments</a></li>
+      <li>Previous: <a href="predicted_branches.html" title="previous chapter">Predicted branches versus GT branches</a></li>
       <li>Next: <a href="models.html" title="next chapter">Model architectures</a></li>
   </ul></li>
 </ul>
@@ -125,18 +127,18 @@
     </div>
     <div class="footer">
       &#169;2026, Chan Lik Wai.
-      
+
       |
       Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
       &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
-      
+
       |
       <a href="_sources/data_and_preprocessing.md.txt"
           rel="nofollow">Page source</a>
     </div>
 
-    
 
-    
+
+
   </body>
 </html>

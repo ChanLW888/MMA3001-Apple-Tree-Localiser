@@ -190,6 +190,11 @@ baseline on separate held-out trees. No annotated PNGs or per-run CSVs are made.
       Complete traditional RGB/depth/GT triplets are intersected with reference
       count basenames, preserving zero-count images. GT is stretched to RGB
       geometry. Images are cached in RAM unless --no-cache reloads each run.
+      The no-cache path still materialises the entire split as a list; it is
+      not a bounded-memory stream. The preceding iteration's current_frames
+      remains referenced while the next list is built, so peak memory can
+      include two split-sized image lists. The CLI help's RAM-reduction intent
+      has not been established by this implementation.
       RF-DETR CSV predictions are pseudo-reference, never new inference.
 
       Metrics include micro precision/recall/F1, image macro F1, signed and

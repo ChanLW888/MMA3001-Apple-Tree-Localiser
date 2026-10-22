@@ -14,40 +14,52 @@
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Overview" href="overview.html" />
-   
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
-  
+    <link rel="next" title="Reviewer starting point and reproduction levels" href="reviewer_start.html" />
 
-  
-  
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+
+
+
+
 
   </head><body>
-  
+
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          
+
 
           <div class="body" role="main">
-            
+
   <section id="apple-tree-localiser-mma3001">
 <h1>Apple Tree Localiser - MMA3001<a class="headerlink" href="#apple-tree-localiser-mma3001" title="Link to this heading">¶</a></h1>
 <p>Documentation for RGB-D branch segmentation and 2D apple localisation, including
 MLP/U-Net models, traditional detection, RF-DETR, comparison, optimisation and
-preprocessing. Detectors currently default to branch ground truth rather than an
-automatically connected branch-model pipeline.</p>
+preprocessing. Standalone detectors default to GT; the predicted-branch driver
+connects improved-U-Net masks to traditional detection.</p>
 <p>The API reference uses existing docstrings and statically extracted signatures.
 Building this site does not import any project source module.</p>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Project documentation</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="reviewer_start.html">Reviewer starting point and reproduction levels</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="reviewer_start.html#review-without-orchard-data-or-checkpoints">Review without orchard data or checkpoints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reviewer_start.html#reproduce-models-and-orchard-experiments">Reproduce models and orchard experiments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reviewer_start.html#evidence-for-assessment-and-final-demonstration">Evidence for assessment and final demonstration</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="workflows.html">Apple workflows and environments</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="workflows.html#two-conda-environments">Two Conda environments</a></li>
 <li class="toctree-l2"><a class="reference internal" href="workflows.html#api-navigation">API navigation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="workflows.html#licence-boundary">Licence boundary</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="predicted_branches.html">Predicted branches versus GT branches</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="predicted_branches.html#reproduce-fresh-predictions">Reproduce fresh predictions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="predicted_branches.html#cli-contract">CLI contract</a></li>
+<li class="toctree-l2"><a class="reference internal" href="predicted_branches.html#outputs-matching-and-limitations">Outputs, matching and limitations</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="data_and_preprocessing.html">Data and preprocessing</a><ul>
@@ -60,6 +72,7 @@ Building this site does not import any project source module.</p>
 <li class="toctree-l2"><a class="reference internal" href="models.html#pixel-mlp">Pixel MLP</a></li>
 <li class="toctree-l2"><a class="reference internal" href="models.html#basic-resnet-34-u-net">Basic ResNet-34 U-Net</a></li>
 <li class="toctree-l2"><a class="reference internal" href="models.html#extended-resnet-34-u-net">Extended ResNet-34 U-Net</a></li>
+<li class="toctree-l2"><a class="reference internal" href="models.html#method-family-references">Method-family references</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="training_and_evaluation.html">Training and evaluation</a><ul>
@@ -74,9 +87,11 @@ Building this site does not import any project source module.</p>
 <li class="toctree-l2"><a class="reference internal" href="usage.html#train-separately">Train separately</a></li>
 <li class="toctree-l2"><a class="reference internal" href="usage.html#winter-predictions">Winter predictions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="usage.html#build-and-view-documentation">Build and view documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#summer-predicted-branches">Summer predicted branches</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="api/index.html">Source API reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/apple_predictor_predicted_compare.html">apple_predictor_predicted_compare</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api/apple_predictor_v1.html">apple_predictor_v1</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api/apple_segmenter_train.html">apple_segmenter_train</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api/apple_segmenter_v1.html">apple_segmenter_v1</a></li>
@@ -101,7 +116,7 @@ Building this site does not import any project source module.</p>
 
 
           </div>
-          
+
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
@@ -127,8 +142,10 @@ Building this site does not import any project source module.</p>
 <script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
 <p class="caption" role="heading"><span class="caption-text">Project documentation</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="reviewer_start.html">Reviewer starting point and reproduction levels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="workflows.html">Apple workflows and environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="predicted_branches.html">Predicted branches versus GT branches</a></li>
 <li class="toctree-l1"><a class="reference internal" href="data_and_preprocessing.html">Data and preprocessing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="models.html">Model architectures</a></li>
 <li class="toctree-l1"><a class="reference internal" href="training_and_evaluation.html">Training and evaluation</a></li>
@@ -140,7 +157,7 @@ Building this site does not import any project source module.</p>
 <h3>Related Topics</h3>
 <ul>
   <li><a href="#">Documentation overview</a><ul>
-      <li>Next: <a href="overview.html" title="next chapter">Overview</a></li>
+      <li>Next: <a href="reviewer_start.html" title="next chapter">Reviewer starting point and reproduction levels</a></li>
   </ul></li>
 </ul>
 </div>
@@ -158,18 +175,18 @@ Building this site does not import any project source module.</p>
     </div>
     <div class="footer">
       &#169;2026, Chan Lik Wai.
-      
+
       |
       Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
       &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
-      
+
       |
       <a href="_sources/index.rst.txt"
           rel="nofollow">Page source</a>
     </div>
 
-    
 
-    
+
+
   </body>
 </html>

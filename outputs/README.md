@@ -176,3 +176,43 @@ place. Use a fresh `--output-dir` per objective and preserve historical results.
 Documentation edits also change source hashes. No historical results were rerun
 for the software tests; their actual execution report is in
 [test/test_report.txt](../test/test_report.txt).
+
+
+## Predicted branches and aligned GT control
+
+| Output | Default directory |
+|---|---|
+| Predicted traditional detections | `outputs/apple_detection_predicted` |
+| Predicted comparison | `outputs/apple_detector_comparison_predicted` |
+| Square masks before projection | `outputs/branch_predictions/<RGB-stem>_branch.png` |
+| Optional aligned-GT detections | `outputs/apple_detection_gt_aligned` |
+| Optional aligned-GT comparison | `outputs/apple_detector_comparison_gt_aligned` |
+
+Detection folders use traditional counts/instances schemas and flat annotations.
+Timing columns are `image, apple_count, read_ms, branch_ms, detection_ms, save_ms,
+total_ms`, in milliseconds. Read covers full RGB/depth loading; branch includes
+network preprocessing/inference or cached/GT reads, optional mask saves and
+projection; detection covers candidate filtering; save covers annotation drawing
+and writing. Total ends before final CSV/metadata writes and excludes checkpoint
+loading/model construction. Cached and fresh-mask branch timing are incomparable.
+
+Standalone traditional timing has no branch-network work. RF-DETR read time includes
+branch alignment/dilation; inference wraps synchronised `model.predict`; filter
+covers instance filtering; save includes image and count/instance-row writes.
+RF-DETR model initialisation and final CSV flush/close are outside frame totals,
+and there is no explicit warmup. Winter timing is forward-pass only. The comparator
+performs no runtime comparison. Different boundaries cannot establish speedups.
+
+Predicted metadata records source, alignment, requested threshold/checkpoint,
+checkpoint hash if available and detector constants. Cached masks are not
+fingerprinted: metadata does not establish their true checkpoint/threshold.
+GT control is >127/central placement; standalone traditional GT is >0/full resize.
+Boxes are inclusive xyxy in original RGB pixels, x right and y down; exported
+branch-network masks themselves remain square input-grid PNGs.
+Reruns overwrite CSVs/metadata and matching PNGs, leaving old unmatched PNGs.
+Keep each custom experiment/reference directory distinct.
+
+Reports in ignored output folders are historical artefacts preserved by this audit.
+Some contain obsolete commands/parameter prose. Their numerical results were not
+recomputed; use the current generator and maintained commands for new reports.
+Source-default settings do not prove historical run provenance.

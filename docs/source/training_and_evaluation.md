@@ -31,4 +31,4 @@ Apple comparison is a separate workflow on saved CSVs. Its RF-DETR reference is 
 
 ## Testing boundaries
 
-Synthetic matching tests can validate threshold inclusivity, one-to-one cardinality, metrics and CSV validation without orchard inference. Full test discovery also includes an all-frame detector regression and output-dependent fixtures. A stale CSV-path mock, missing export timing fields and historical output-directory assumptions are documented in the verification report; they were not fixed in this documentation-only task.
+The current 40-test synthetic suite checks detection, exports, matching, metrics, CSV validation and grid helpers, including mocked main orchestration. It contains no all-frame regression or historical-output fixtures. Its changed-objective test reproduces stale held-out reuse; passing does not establish a fix. The predicted driver has no dedicated test module. See the repository test README and final audit for execution and smoke-check boundaries.

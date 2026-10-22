@@ -40,3 +40,15 @@ conda run --no-capture-output -n mma3001 python -m sphinx -E -a -W --keep-going 
 ```
 
 Open `docs/_build/html/index.html` or the submission copy `docs/html/index.html` in a browser. Preserve all sibling files and asset directories. Static extraction reads source text and never imports project modules. No package installation, training or inference is required for the documentation build.
+
+
+## Summer predicted branches
+
+In `mma3001`, with saved RF-DETR CSVs and the actual improved checkpoint:
+
+```powershell
+python src/apple_predictor_predicted_compare.py --help
+python src/apple_predictor_predicted_compare.py --checkpoint outputs/improved_resnet34_unet_output/improved_resnet34_unet_best.pth --also-gt-control
+```
+
+See [predicted branches](predicted_branches.md) for all options and prerequisites.

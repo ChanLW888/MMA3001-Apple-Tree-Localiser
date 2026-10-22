@@ -13,8 +13,9 @@ Run all commands from the repository root. Source modules use Google-style docst
 | `train_baseline.py` | Train the pixel-wise RGB-D MLP branch-segmentation baseline | `python src/train_baseline.py --data-root data/Organised` |
 | `train_unet.py` | Train the baseline ResNet-34 U-Net branch-segmentation model | `python src/train_unet.py --data-root data/Organised` |
 | `train_improved_unet.py` | Train the improved U-Net with ASPP, attention gates and residual decoder blocks | `python src/train_improved_unet.py --data-root data/Organised` |
-| `winter_inference.py` | Compare all three branch models on winter RGB-D images and benchmark inference times | `python src/winter_inference.py` |
+| `winter_inference.py` | Qualitative winter predictions and model-only timing for three checkpoints | Use the complete command below; dataset and three checkpoint flags are required |
 | `apple_predictor_v1.py` | Traditional apple detection using colour, depth validity, geometry and ground-truth branches | `python src/apple_predictor_v1.py` |
+| `apple_predictor_predicted_compare.py` | Traditional detection with improved-U-Net branches and optional aligned-GT control | `python src/apple_predictor_predicted_compare.py --help` |
 | `apple_segmenter_train.py` | Train the RF-DETR apple instance-segmentation model | `python src/apple_segmenter_train.py` |
 | `apple_segmenter_v1.py` | Run RF-DETR apple detection with branch-region filtering | `python src/apple_segmenter_v1.py` |
 | `compare_apple_detectors.py` | Compare traditional and RF-DETR apple detections using counting, matching and localisation metrics | `python src/compare_apple_detectors.py --max-distance 30` |
@@ -22,7 +23,9 @@ Run all commands from the repository root. Source modules use Google-style docst
 
 ## Branch Segmentation
 
-The branch-segmentation models use four-channel RGB-D inputs with dimensions `[B, 4, H, W]` and produce binary segmentation masks identifying the Y-shaped trunk and primary scaffold branches.
+The branch models use RGB-D inputs `[B, 4, H, W]` and produce raw logits
+`[B, 1, H, W]`. Sigmoid and thresholding produce binary masks of the labelled
+trunk/scaffold branches; the network output itself is not a binary mask.
 
 Three architectures are implemented:
 
@@ -38,6 +41,14 @@ All models are trained using summer RGB-D images and ground-truth branch masks. 
 
 It produces predicted segmentation masks, visual comparisons and inference-time measurements. Since winter ground-truth branch masks are unavailable, the results provide qualitative comparisons and runtime benchmarks rather than quantitative segmentation accuracy.
 
+With checkpoints in the current default training locations:
+
+```powershell
+python src/winter_inference.py --data-root data/Organised --mlp-checkpoint outputs/pixel_mlp_crop_trainval/pixel_mlp_best.pth --unet-checkpoint outputs/resnet34_unet_crop_trainval_output/resnet34_unet_best.pth --improved-checkpoint outputs/improved_resnet34_unet_output/improved_resnet34_unet_best.pth
+```
+
+Supply actual checkpoint paths for historical/custom runs. These files are not in Git.
+
 ## Apple Localisation
 
 Two apple-detection approaches are implemented:
@@ -47,7 +58,7 @@ Two apple-detection approaches are implemented:
 
 Both approaches output apple counts, bounding boxes and centroids in original-image pixel coordinates.
 
-The implementations currently use ground-truth branch masks by default. However, their mask-alignment methods differ: the traditional detector uses full-frame resizing, while RF-DETR uses centre-crop alignment. This difference must be considered when interpreting comparisons.
+The standalone implementations use GT branches by default; the predicted driver connects improved-U-Net masks to traditional detection. However, their mask-alignment methods differ: the traditional detector uses full-frame resizing, while RF-DETR uses centre-crop alignment. This difference must be considered when interpreting comparisons.
 
 RF-DETR predictions are used as **pseudo-ground-truth references**, not independently verified apple annotations.
 
@@ -86,7 +97,7 @@ optimiser is absent from this checkout.
 | `--select-by` | `f1` (default), `precision`, `recall`, `mae`, `rmse`, `centroid`, `bbox_iou`, `count_bias` |
 | `--split` | `by-tree` (default), `all` |
 | `--max-runs` | No limit; stop after this many newly completed combinations |
-| `--no-cache` | Reload images each configuration instead of retaining them in RAM |
+| `--no-cache` | Reload the complete split into a new list each configuration; does not stream frames |
 
 The grid has 5,184 combinations. Resume validates metadata and skips recorded run
 IDs; partial rankings are not exhaustive results. Source edits change hashes.
@@ -94,8 +105,44 @@ The selection objective is not recorded in resume metadata: an existing held-out
 CSV is reused even after `--select-by` changes. Use separate output directories.
 Neither `--max-runs` nor `--no-cache` removes the real-data requirement.
 
+Despite the CLI help's stated RAM-reduction intent, `--no-cache` still loads the
+whole split. The previous iteration's list can remain referenced while its
+replacement is built, allowing two split-sized lists at peak. No reduced-memory
+claim is justified without a separate implementation change and measurement.
+
+The exact current search space is:
+
+| Constant | Values |
+|---|---|
+| `RED_THRESHOLD` | 30, 40, 50, 60 |
+| `RED_DOMINANCE` | 1.2, 1.35, 1.5, 1.65 |
+| `MIN_APPLE_AREA` | 10, 20, 30, 50 pixels |
+| `MAX_APPLE_AREA` | 2000, 5000, 8000 pixels |
+| `MIN_CIRCULARITY` | 0.10, 0.20, 0.30 |
+| `MAX_ASPECT_RATIO` | 1.8, 2.5, 3.5 |
+| `MORPH_KERNEL_SIZE` | 3, 5, 7 pixels (ellipse diameter) |
+
+`select_best` prefers the exact baseline on tied objective scores, then the
+lexicographically smallest run ID. The rankings CSV instead breaks ties only by
+run ID; its first row can differ from `best_by_metric.csv` on a tie. Count bias
+minimises absolute signed error, while MAE/RMSE/centroid minimise error and
+F1/precision/recall/IoU maximise agreement. Conditional centroid/IoU objectives can
+favour a small matched subset. Invalid scores normally rank last, but count-bias
+NaN handling is inconsistent. The search script itself, image bytes, environment
+and complete held-out filenames are not hashed. Choosing multiple objectives after
+viewing held-out results would compromise that held-out interpretation.
+
 ## Software unit tests
 
 Run `conda run -n mma3001 python -m unittest discover -s test -p "test_*.py" -v`
 from the repository root. See [test coverage and limitations](../test/README.md).
 Winter inference is a maintained source workflow, not a unit test.
+
+
+## Predicted branches and aligned GT control
+
+`apple_predictor_predicted_compare.py` is the summer branch-to-apple entry point.
+It imports the traditional detector, lazily imports `winter_inference`/PyTorch for
+fresh masks and invokes the comparator as a subprocess in the same interpreter.
+It does not invoke RF-DETR. See the [complete guide](../docs/source/predicted_branches.md)
+for commands, all flags, outputs, alignment, cache limitations and failure modes.

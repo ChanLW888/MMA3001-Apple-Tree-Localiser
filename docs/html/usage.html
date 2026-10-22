@@ -16,23 +16,23 @@
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Source API reference" href="api/index.html" />
     <link rel="prev" title="Training and evaluation" href="training_and_evaluation.html" />
-   
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
-  
 
-  
-  
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+
+
+
+
 
   </head><body>
-  
+
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          
+
 
           <div class="body" role="main">
-            
+
   <section id="usage">
 <h1>Usage<a class="headerlink" href="#usage" title="Link to this heading">¶</a></h1>
 <p>Run these commands from the repository root in an already provisioned environment. The filenames below exist in this checkout. Training/inference commands are instructions for future intentional runs and were not executed during documentation work.</p>
@@ -70,11 +70,20 @@
 </div>
 <p>Open <code class="docutils literal notranslate"><span class="pre">docs/_build/html/index.html</span></code> or the submission copy <code class="docutils literal notranslate"><span class="pre">docs/html/index.html</span></code> in a browser. Preserve all sibling files and asset directories. Static extraction reads source text and never imports project modules. No package installation, training or inference is required for the documentation build.</p>
 </section>
+<section id="summer-predicted-branches">
+<h2>Summer predicted branches<a class="headerlink" href="#summer-predicted-branches" title="Link to this heading">¶</a></h2>
+<p>In <code class="docutils literal notranslate"><span class="pre">mma3001</span></code>, with saved RF-DETR CSVs and the actual improved checkpoint:</p>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">src</span><span class="p">/</span><span class="n">apple_predictor_predicted_compare</span><span class="p">.</span><span class="n">py</span> <span class="p">-</span><span class="n">-help</span>
+<span class="n">python</span> <span class="n">src</span><span class="p">/</span><span class="n">apple_predictor_predicted_compare</span><span class="p">.</span><span class="n">py</span> <span class="p">-</span><span class="n">-checkpoint</span> <span class="n">outputs</span><span class="p">/</span><span class="n">improved_resnet34_unet_output</span><span class="p">/</span><span class="n">improved_resnet34_unet_best</span><span class="p">.</span><span class="n">pth</span> <span class="p">-</span><span class="n">-also</span><span class="o">-gt</span><span class="n">-control</span>
+</pre></div>
+</div>
+<p>See <a class="reference internal" href="predicted_branches.html"><span class="std std-doc">predicted branches</span></a> for all options and prerequisites.</p>
+</section>
 </section>
 
 
           </div>
-          
+
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
@@ -100,8 +109,10 @@
 <script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
 <p class="caption" role="heading"><span class="caption-text">Project documentation</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="reviewer_start.html">Reviewer starting point and reproduction levels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="workflows.html">Apple workflows and environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="predicted_branches.html">Predicted branches versus GT branches</a></li>
 <li class="toctree-l1"><a class="reference internal" href="data_and_preprocessing.html">Data and preprocessing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="models.html">Model architectures</a></li>
 <li class="toctree-l1"><a class="reference internal" href="training_and_evaluation.html">Training and evaluation</a></li>
@@ -110,6 +121,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#train-separately">Train separately</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#winter-predictions">Winter predictions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#build-and-view-documentation">Build and view documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#summer-predicted-branches">Summer predicted branches</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="api/index.html">Source API reference</a></li>
@@ -138,18 +150,18 @@
     </div>
     <div class="footer">
       &#169;2026, Chan Lik Wai.
-      
+
       |
       Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
       &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
-      
+
       |
       <a href="_sources/usage.md.txt"
           rel="nofollow">Page source</a>
     </div>
 
-    
 
-    
+
+
   </body>
 </html>

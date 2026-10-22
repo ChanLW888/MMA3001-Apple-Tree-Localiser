@@ -1,9 +1,9 @@
-﻿"""Compare traditional predictions with RF-DETR pseudo-ground truth.
+"""Compare traditional predictions with RF-DETR pseudo-ground truth.
 
 Matches exact basenames and original-image centroids from saved CSVs. One-to-one
 matching maximises valid pairs before minimising distance. Agreement is not
 independently verified accuracy. Runs no detector inference. Generated report prose
-includes fixed historical statements that this program does not verify.
+distinguishes source defaults from unverified historical run settings.
 
 Example:
     python src/compare_apple_detectors.py --max-distance 30 --thresholds 10 20 30 40 50
@@ -329,8 +329,8 @@ def main():
 
     Writes metrics, sensitivity, coverage, examples, SHA-256 manifest and annotation
     inventory. Defaults to apple_rfdetr_instances and apple_detection under outputs.
-    Current source is not proof of historical CSV provenance. Embedded report prose is
-    fixed program data, not verified experiment history.
+    Current source is not proof of historical CSV provenance. Report descriptions
+    of defaults do not establish historical experiment configuration.
 
     Returns:
         None.
@@ -437,9 +437,9 @@ def main():
     report=['# Apple detector comparison',
         'RF-DETR predictions are pseudo-ground-truth reference annotations, not verified ground truth. Agreement does not establish real-world apple detection or localisation accuracy.',
         f'Exact filename intersection: {len(images)} images. Reference processed: {len(rc)}; traditional processed: {len(pc)}. Unmatched images: {len(coverage)-len(images)}; see image_coverage.csv. Dimensions: {dict(dimensions)}.',
-        'Implementations: src/apple_predictor_v1.py (apple_detector_v1) and src/apple_segmenter_v1.py (RFDETRSegMedium). Both read data/Organised/Summer/RGB. Traditional requires valid depth; RF-DETR does not.',
-        'Both configured branch sources are GT, not predicted U-Net masks. Traditional uses grayscale >0 and full-image nearest-neighbour resizing; RF-DETR uses >127, central square placement, then dilation. Both use ellipse kernel diameter 100 pixels and overlap >=0.05. These are different regions despite shared mask files; results are an as-configured comparison, not a controlled detector-only comparison.',
-        'Traditional configuration is recorded in outputs/apple_detection/run_metadata.json. Red threshold 50; dominance 1.5; morphology ellipse 5; area 30–5000 pixels; circularity >=0.20; aspect ratio <=2.5. MIN_RED_AREA=15 is unused in existing code. Export adds no filtering and leaves confidence blank; red_score is separate.',
+        'Implementations: src/apple_predictor_v1.py (apple_detector_v1) and src/apple_segmenter_v1.py (RFDETRSegMedium). The default RGB folder is data/Organised/Summer/RGB; --rgb-dir selects the actual source images. Traditional requires valid depth; RF-DETR does not.',
+        'Both configured branch sources are GT, not predicted U-Net masks, in the standalone source defaults only. Saved CSVs do not establish this provenance; the predicted comparison driver uses improved-U-Net branches and an optional aligned-GT control. Standalone traditional uses grayscale >0 and full-image nearest-neighbour resizing; RF-DETR uses >127, central square placement, then dilation. Both use ellipse kernel diameter 100 pixels and overlap >=0.05. These are different regions despite shared mask files; results are an as-configured comparison, not a controlled detector-only comparison.',
+        'Traditional configuration is recorded in outputs/apple_detection/run_metadata.json. That is the default path; for custom experiments inspect run_metadata.json in the selected --traditional-dir. Source defaults: red threshold 50; dominance 1.5; morphology ellipse 5; area 30–5000 pixels; circularity >=0.20; aspect ratio <=2.5. Export adds no filtering and leaves confidence blank; red_score is separate.',
         'RF-DETR source configuration: checkpoint outputs/rfdetr_apple_tree/checkpoint_best_total.pth; confidence >=0.20; instance mask threshold >0.50; minimum area 1; largest-branch-component filtering disabled. Historical run provenance cannot be proven from CSV alone; these settings describe the current source. Existing predictions were not changed or rerun.',
         f'Coordinates: original RGB pixel coordinates, origin top left; inclusive xyxy boxes; mask/component mean centroids. Traditional conversion x2=x+w-1, y2=y+h-1. Principal matching maximizes the number of pairs within inclusive distance <= {args.max_distance:g} px, then minimizes total Euclidean distance using Hungarian assignment and dummy unmatched columns. Box IoU uses inclusive pixel areas and is descriptive only.',
         'Metrics are micro-aggregated over matched processed images, including zeros established by counts CSVs. Undefined precision/recall/F1 denominators return zero; no accepted-distance samples yield blank mean/median. Count error is traditional minus RF-DETR.',
@@ -453,10 +453,10 @@ def main():
     report.extend(f"- {label}: {r['image']}; reference={r['rfdetr_reference_count']}, traditional={r['traditional_count']}, signed error={r['signed_count_error']}, F1 agreement={r['f1_relative_to_rfdetr']:.3f}, mean accepted distance={r['mean_centroid_error_px']}." for label,r in selections.items())
     report.extend([f'\nDuplicate geometry rows retained: RF-DETR {len(rd)}, traditional {len(pd)}. Duplicate IDs are rejected. Distinct but overlapping boxes are retained, since overlap alone does not establish a duplicate apple. See duplicate_detections.csv.',
         '## Limitations and conclusions',
-        'Differences combine detector behaviour, branch alignment, mask binarization, depth validity and possible merged/split apples. Count agreement can hide localisation errors. RF-DETR can miss, merge, split or hallucinate apples, so FP/FN labels only express disagreement with that reference. Accepted-distance errors are conditional on the matching threshold and cannot measure true accuracy. Images may be correlated orchard frames; no independence or statistical generalisation is claimed. No detector parameters were tuned on these evaluation results. Branch dilation/overlap sensitivity was not run; it would change predictions and must be a separately labelled experiment, ideally using common aligned branch masks and held-out human annotations.',
+        'Differences combine detector behaviour, branch alignment, mask binarization, depth validity and possible merged/split apples. Count agreement can hide localisation errors. RF-DETR can miss, merge, split or hallucinate apples, so FP/FN labels only express disagreement with that reference. Accepted-distance errors are conditional on the matching threshold and cannot measure true accuracy. Images may be correlated orchard frames; no independence or statistical generalisation is claimed. This comparator does not tune detector parameters; whether its input predictions were previously tuned must be established from run provenance. Branch dilation/overlap sensitivity is not performed here; it would change predictions and must be a separately labelled experiment, ideally using common aligned branch masks and held-out human annotations.',
         f'Human-annotation candidates: {annotations}. COCO annotation authorship and correspondence to orchard evaluation images need verification. Use annotation_inventory.json and evaluate separately on human-labelled held-out images; avoid training/evaluation leakage. Existing branch GT masks label branches, not apple instances.',
         '## Reproduction',
-        'From repository root:\n```powershell\nconda run -n treeid python -m unittest discover -s test -p "test_apple*.py" -v\nconda run -n treeid python src/apple_predictor_v1.py\nconda run -n treeid python src/compare_apple_detectors.py --max-distance 30 --thresholds 10 20 30 40 50\n```',
+        'From repository root:\n```powershell\nconda run -n mma3001 python -m unittest discover -s test -p "test_*.py" -v\nconda run -n mma3001 python src/apple_predictor_v1.py\nconda run -n mma3001 python src/compare_apple_detectors.py --max-distance 30 --thresholds 10 20 30 40 50\n```',
         'The RF-DETR CSVs are fixed inputs; input_manifest.json records SHA-256 fingerprints. Install/use existing numpy, scipy, matplotlib, Pillow and OpenCV dependencies. Generated outputs and raw datasets are ignored by Git.'])
     report.insert(2, 'No runtime or timing comparison is included. All metrics describe detection counts, localisation agreement, or input coverage.')
     (out/'evaluation_report.md').write_text('\n\n'.join(report),encoding='utf-8')

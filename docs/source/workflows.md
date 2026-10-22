@@ -1,6 +1,6 @@
 # Apple workflows and environments
 
-The project combines RGB-D branch segmentation with separate 2D apple localisation experiments. Both detectors default to branch ground truth; they do not automatically run trained branch networks. RF-DETR predictions used for comparison are pseudo-ground truth, not verified apple annotations.
+The project combines RGB-D branch segmentation with separate 2D apple localisation experiments. Standalone detectors default to branch GT. The [predicted branch driver](predicted_branches.md) runs the improved U-Net before traditional detection, with an optional aligned-GT control. RF-DETR predictions used for comparison are pseudo-ground truth, not verified apple annotations.
 
 ## Two Conda environments
 
@@ -16,7 +16,7 @@ The two detector stacks need not coexist in one environment. Datasets and checkp
 ## API navigation
 
 - Branch models/training: [MLP](api/train_baseline.rst), [U-Net](api/train_unet.rst), [extended U-Net](api/train_improved_unet.rst).
-- Traditional detection: [apple predictor](api/apple_predictor_v1.rst).
+- Traditional detection: [apple predictor](api/apple_predictor_v1.rst), [predicted driver](api/apple_predictor_predicted_compare.rst).
 - RF-DETR: [training](api/apple_segmenter_train.rst), [inference](api/apple_segmenter_v1.rst).
 - Saved-prediction [comparison](api/compare_apple_detectors.rst).
 - Parameter experiments: [full grid search](api/full_grid_search_apple.rst).

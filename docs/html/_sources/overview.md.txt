@@ -12,4 +12,4 @@ Input tensors are float32 `[B, 4, H, W]` in R/G/B/depth order. Targets and logit
 
 Architecture differences suggest different representation/computation trade-offs, but no performance ranking or timing result is established by source inspection. Compare using the same data split, preprocessing and threshold. Validation is used for checkpoint selection, not independent testing.
 
-The separate apple workflows are documented in the repository root README. They default to ground-truth branch masks, not these models' predictions. Thus branch training and apple localisation are separate workflows, not a fully connected deployment pipeline. RF-DETR comparison uses model-generated pseudo-ground truth rather than verified apple labels.
+Standalone apple scripts default to GT branches. The [predicted branch driver](predicted_branches.md) connects the improved U-Net to traditional detection and offers a GT-aligned control. This implemented connection has not established independent deployment accuracy. RF-DETR comparison uses model-generated pseudo-ground truth rather than verified apple labels.

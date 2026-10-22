@@ -4,7 +4,7 @@ Uses MyST Markdown and Alabaster. No project model modules are imported; buildin
 guide does not train or run detectors.
 
 Example:
-    python -m sphinx -b html docs/source docs/_build/html
+    python -m sphinx -c docs/static_config -b html docs/source docs/_build/html
 """
 
 from pathlib import Path

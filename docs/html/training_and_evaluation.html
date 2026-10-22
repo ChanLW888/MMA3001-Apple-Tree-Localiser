@@ -16,23 +16,23 @@
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Usage" href="usage.html" />
     <link rel="prev" title="Model architectures" href="models.html" />
-   
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
-  
 
-  
-  
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+
+
+
+
 
   </head><body>
-  
+
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          
+
 
           <div class="body" role="main">
-            
+
   <section id="training-and-evaluation">
 <h1>Training and evaluation<a class="headerlink" href="#training-and-evaluation" title="Link to this heading">¶</a></h1>
 <section id="training-configuration">
@@ -94,13 +94,13 @@
 </section>
 <section id="testing-boundaries">
 <h2>Testing boundaries<a class="headerlink" href="#testing-boundaries" title="Link to this heading">¶</a></h2>
-<p>Synthetic matching tests can validate threshold inclusivity, one-to-one cardinality, metrics and CSV validation without orchard inference. Full test discovery also includes an all-frame detector regression and output-dependent fixtures. A stale CSV-path mock, missing export timing fields and historical output-directory assumptions are documented in the verification report; they were not fixed in this documentation-only task.</p>
+<p>The current 40-test synthetic suite checks detection, exports, matching, metrics, CSV validation and grid helpers, including mocked main orchestration. It contains no all-frame regression or historical-output fixtures. Its changed-objective test reproduces stale held-out reuse; passing does not establish a fix. The predicted driver has no dedicated test module. See the repository test README and final audit for execution and smoke-check boundaries.</p>
 </section>
 </section>
 
 
           </div>
-          
+
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
@@ -126,8 +126,10 @@
 <script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
 <p class="caption" role="heading"><span class="caption-text">Project documentation</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="reviewer_start.html">Reviewer starting point and reproduction levels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="workflows.html">Apple workflows and environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="predicted_branches.html">Predicted branches versus GT branches</a></li>
 <li class="toctree-l1"><a class="reference internal" href="data_and_preprocessing.html">Data and preprocessing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="models.html">Model architectures</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Training and evaluation</a><ul>
@@ -164,18 +166,18 @@
     </div>
     <div class="footer">
       &#169;2026, Chan Lik Wai.
-      
+
       |
       Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
       &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
-      
+
       |
       <a href="_sources/training_and_evaluation.md.txt"
           rel="nofollow">Page source</a>
     </div>
 
-    
 
-    
+
+
   </body>
 </html>

@@ -14,6 +14,10 @@ strictly loads trusted local checkpoints. Uses training-compatible preprocessing
 winter GT is required; predictions cannot establish winter accuracy. Timing excludes
 preprocessing, transfer, sigmoid and saving.
 
+Requires winter RGB-D pairs and all three local model checkpoints. Writes masks,
+overlays, panels, per_image_timings.csv, summary.csv and benchmark_metadata.json
+under outputs/winter_inference_benchmark by default. Reruns overwrite matching names.
+
 .. rubric:: Example
 
 See README.md for the invocation supplying all three checkpoints.

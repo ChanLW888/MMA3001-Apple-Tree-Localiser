@@ -6,6 +6,10 @@ Uses plain BCE, AdamW (weight decay 1e-4), a validation-Dice plateau scheduler a
 paired flips. RGB brightness/contrast perturbation operates after normalisation, leaving
 depth unchanged. Architecture intent does not establish improved measured accuracy.
 
+Requires complete summer RGB/depth/branch-GT triplets. Writes the best checkpoint,
+history.csv, val_metrics.csv and validation panels under
+outputs/improved_resnet34_unet_output by default; named files can be overwritten.
+
 Example:
     python src/train_improved_unet.py --data-root data/Organised --no-pretrained
 """
@@ -172,7 +176,6 @@ def centre_crop_square(img):
     return img.crop((left, top, left + side, top + side))
 
 
-    """Load paired RGB-D images and binary branch masks."""
 class BranchDataset(Dataset):
     """Load aligned RGB-D inputs and binary branch targets.
 
@@ -248,7 +251,6 @@ class BranchDataset(Dataset):
         return torch.from_numpy(x.astype(np.float32)), torch.from_numpy(y), sample["key"]
 
 
-    """Apply convolution, batch normalisation, and ReLU activation."""
 class ConvNormAct(nn.Module):
     """Extract features with convolution, batch normalisation and ReLU."""
     def __init__(self, in_ch, out_ch, kernel_size=3, dilation=1):
@@ -287,7 +289,6 @@ class ConvNormAct(nn.Module):
         return self.block(x)
 
 
-    """Fuse decoder and skip features with a residual block."""
 class ResidualDecoderBlock(nn.Module):
     """Fuse resized decoder and skip features through a residual path."""
     def __init__(self, in_ch, skip_ch, out_ch):
@@ -334,7 +335,6 @@ class ResidualDecoderBlock(nn.Module):
         return self.relu(self.conv2(self.conv1(x)) + residual)
 
 
-    """Weight skip features according to decoder context."""
 class AttentionGate(nn.Module):
     """Weight encoder skip features using decoder context."""
     def __init__(self, gate_ch, skip_ch, inter_ch):

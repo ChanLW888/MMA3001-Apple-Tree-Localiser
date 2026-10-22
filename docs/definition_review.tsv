@@ -1,0 +1,214 @@
+file	line	symbol	kind	signature	purpose	args_section	returns_or_yields	raises_section
+docs/static_config/conf.py	17	prose	FunctionDef	node	Format a parsed object docstring without importing its module.	True	True	False
+docs/static_config/conf.py	29	members	FunctionDef	nodes, prefix=''	Recursively emit static Python-domain directives, including nested helpers.	True	True	False
+docs/static_config/conf.py	95	trim_generated_html	FunctionDef	app, exception	Remove template trailing whitespace after a successful HTML build.	True	True	True
+docs/static_config/conf.py	115	setup	FunctionDef	app	Register output formatting without importing or running project modules.	True	False	False
+docs/verify_documentation.py	20	Page	ClassDef		Collect HTML identifiers and local hyperlink/asset references.	False	False	False
+docs/verify_documentation.py	23	Page.__init__	FunctionDef	self, text	Parse UTF-8 HTML text into ids and href/src collections.	True	False	False
+docs/verify_documentation.py	34	Page.handle_starttag	FunctionDef	self, tag, attrs	Collect id/name anchors and href/src attributes from one element.	True	False	False
+docs/verify_documentation.py	48	check	FunctionDef		Compile maintained Python and resolve local Markdown/HTML references.	False	True	True
+src/apple_predictor_predicted_compare.py	48	centre_square_mask	FunctionDef	mask_2d: np.ndarray, image_shape: tuple[int, int]	Project branch foreground into the original image's central square.	True	True	True
+src/apple_predictor_predicted_compare.py	78	load_improved_model	FunctionDef	checkpoint_path: Path, requested_device: str	Load a local improved U-Net checkpoint without training or downloads.	True	True	True
+src/apple_predictor_predicted_compare.py	121	make_branch_prediction	FunctionDef	rgb_path, depth_path, model_info, threshold: float	Infer a square branch mask with training-compatible RGB-D scaling.	True	True	True
+src/apple_predictor_predicted_compare.py	150	read_predicted_mask	FunctionDef	path: Path	Read a cached square grayscale mask and threshold intensities >127.	True	True	True
+src/apple_predictor_predicted_compare.py	178	detect_and_export	FunctionDef	frames, source, args, model_info=None	Detect full-frame apple candidates using projected branch masks.	True	True	True
+src/apple_predictor_predicted_compare.py	263	detect_and_export.write_csv	FunctionDef	filename, columns, rows	Overwrite one experiment CSV, including its header for empty rows.	True	True	True
+src/apple_predictor_predicted_compare.py	309	run_comparison	FunctionDef	traditional_dir: Path, output_dir: Path, args, source: str	Run saved-CSV comparison and adapt its report prose for this workflow.	True	True	True
+src/apple_predictor_predicted_compare.py	392	build_frames	FunctionDef	args	Discover season-filtered RGB-D pairs, optionally requiring paired GT.	True	True	True
+src/apple_predictor_predicted_compare.py	432	main	FunctionDef	argv=None	Parse options, produce predictions and optionally run comparisons.	True	True	True
+src/apple_predictor_v1.py	52	parse_rgb_filename	FunctionDef	path	Parse tree, season and time from an RGB PNG basename.	True	True	False
+src/apple_predictor_v1.py	71	load_rgb	FunctionDef	path	Read an image in RGB channel order.	True	True	True
+src/apple_predictor_v1.py	86	load_depth	FunctionDef	path	Read stored depth intensities without metric conversion.	True	True	True
+src/apple_predictor_v1.py	105	load_gt	FunctionDef	path, target_shape	Load branch ground truth and stretch it to the RGB grid.	True	True	True
+src/apple_predictor_v1.py	132	detect_red_mask	FunctionDef	rgb, depth	Select red-dominant pixels with valid depth.	True	True	True
+src/apple_predictor_v1.py	155	clean_red_mask	FunctionDef	mask	Suppress isolated red noise and close small gaps.	True	True	True
+src/apple_predictor_v1.py	180	create_branch_zone	FunctionDef	gt	Dilate labelled branch pixels into a proximity region.	True	True	True
+src/apple_predictor_v1.py	202	find_apple_candidates	FunctionDef	rgb, depth, gt	Filter connected red components by geometry and branch proximity.	True	True	True
+src/apple_predictor_v1.py	272	render_apple_annotations	FunctionDef	image_bgr, boxes, centroids, color_bgr	Render boxes, centres, indices and total count on a copy.	True	True	True
+src/apple_predictor_v1.py	303	draw_annotations	FunctionDef	rgb, candidates	Convert candidate boxes to inclusive corners and draw orange labels.	True	True	True
+src/apple_predictor_v1.py	328	get_matching_files	FunctionDef	rgb_path, info	Build depth and branch-GT paths for a parsed frame.	True	True	True
+src/apple_predictor_v1.py	347	process_frame	FunctionDef	rgb_path, info	Load one frame, detect candidates and save annotations.	True	True	True
+src/apple_predictor_v1.py	393	find_all_frames	FunctionDef		Discover complete configured-season RGB/depth/GT triplets.	False	True	False
+src/apple_predictor_v1.py	418	instance_rows	FunctionDef	result	Export components in the shared instance-CSV convention.	True	True	True
+src/apple_predictor_v1.py	448	save_csv	FunctionDef	results	Write counts, instances, timing CSVs and run metadata.	True	True	True
+src/apple_predictor_v1.py	515	main	FunctionDef		Process configured frames and export traditional detector outputs.	False	True	True
+src/apple_segmenter_train.py	98	main	FunctionDef		Train RFDETRSegMedium on cleaned apple COCO splits.	False	True	True
+src/apple_segmenter_v1.py	57	parse_rgb_filename	FunctionDef	path: Path	Parse tree, season and time from an RGB PNG basename.	True	True	False
+src/apple_segmenter_v1.py	77	corresponding_branch_path	FunctionDef	image_path: Path, info: dict	Resolve a GT or externally exported predicted branch mask.	True	True	True
+src/apple_segmenter_v1.py	104	align_branch_mask	FunctionDef	mask: np.ndarray, image_shape, alignment: str	Place a binary branch mask in original RGB coordinates.	True	True	True
+src/apple_segmenter_v1.py	150	make_branch_zone	FunctionDef	branch_mask: np.ndarray	Optionally retain the largest branch component, then dilate.	True	True	True
+src/apple_segmenter_v1.py	181	filter_instances	FunctionDef	detections, image_shape, zone	Retain whole RF-DETR masks with sufficient branch-zone overlap.	True	True	True
+src/apple_segmenter_v1.py	247	render_apple_annotations	FunctionDef	image_bgr, boxes, centroids, color_bgr	Render boxes, centres, indices and total count on a copy.	True	True	True
+src/apple_segmenter_v1.py	278	save_outputs	FunctionDef	image, image_path, branch, zone, instances	Write cyan annotations, uint16 instance IDs and branch-zone PNGs.	True	True	True
+src/apple_segmenter_v1.py	333	main	FunctionDef		Load RF-DETR and export branch-guided apple predictions.	False	True	True
+src/apple_segmenter_v1.py	386	main.sync_cuda	FunctionDef		Synchronise pending CUDA work for inference timing.	False	True	True
+src/compare_apple_detectors.py	29	read_csv	FunctionDef	path	Read headers and rows from a possibly BOM-prefixed CSV.	True	True	True
+src/compare_apple_detectors.py	49	load_instances	FunctionDef	path	Validate and group inclusive-coordinate instance records.	True	True	True
+src/compare_apple_detectors.py	104	load_counts	FunctionDef	path, instances	Validate processed-image counts against instance rows.	True	True	True
+src/compare_apple_detectors.py	142	match_centroids	FunctionDef	reference, traditional, threshold	Maximise valid one-to-one pairs, then minimise summed distance.	True	True	True
+src/compare_apple_detectors.py	179	bbox_iou	FunctionDef	a, b	Measure overlap of two inclusive xyxy pixel boxes.	True	True	True
+src/compare_apple_detectors.py	200	agreement	FunctionDef	tp, fp, fn	Compute micro agreement relative to RF-DETR.	True	True	False
+src/compare_apple_detectors.py	223	evaluate	FunctionDef	images, ref, pred, threshold	Summarise fixed detections over common processed images.	True	True	True
+src/compare_apple_detectors.py	257	evaluate.pair	FunctionDef	i, j, d, status	Build a matched or unmatched record for the current image.	True	True	True
+src/compare_apple_detectors.py	305	write_csv	FunctionDef	path, rows, fields=None	Write dictionaries using explicit or inferred columns.	True	True	True
+src/compare_apple_detectors.py	327	main	FunctionDef		Compare saved CSVs without rerunning either detector.	False	True	True
+src/dataset_organiser.py	122	read_png	FunctionDef	filename	Decode basic 8-bit grayscale or RGB PNG scanlines.	True	True	True
+src/full_grid_search_apple.py	58	load_module	FunctionDef	path, alias	Load a Python file under a supplied import alias.	True	True	True
+src/full_grid_search_apple.py	84	file_hash	FunctionDef	path	Fingerprint a complete file for run provenance.	True	True	True
+src/full_grid_search_apple.py	99	tree_partition	FunctionDef	filename	Assign every frame of one tree to the same deterministic split.	True	True	False
+src/full_grid_search_apple.py	115	combinations	FunctionDef		Enumerate the Cartesian product of the current module GRID.	False	True	False
+src/full_grid_search_apple.py	131	append_row	FunctionDef	path, row	Append one configuration and its metrics to the result CSV.	True	True	True
+src/full_grid_search_apple.py	153	load_rows	FunctionDef	path	Read resumable results and require the exact current column order.	True	True	True
+src/full_grid_search_apple.py	176	numeric	FunctionDef	row, key, maximize=True	Convert a metric into a score where larger is preferred.	True	True	False
+src/full_grid_search_apple.py	197	score	FunctionDef	row, metric	Map a supported optimisation objective to a larger-is-better score.	True	True	True
+src/full_grid_search_apple.py	232	select_best	FunctionDef	rows, criterion	Select the best row with deterministic baseline tie preference.	True	True	True
+src/full_grid_search_apple.py	256	evaluate_configuration	FunctionDef	params, frames, names, predictor, comparator, reference, threshold	Evaluate cached synthetic or real frames without exporting images.	True	True	True
+src/full_grid_search_apple.py	296	main	FunctionDef		Run or resume traditional parameter tuning against saved RF-DETR results.	False	True	True
+src/full_grid_search_apple.py	386	main.load_one	FunctionDef	path, info	Load one aligned RGB/depth/branch frame for evaluation.	True	True	True
+src/full_grid_search_apple.py	410	main.get_frames	FunctionDef	target_split	Load all discovered frames belonging to a split.	True	True	True
+src/preprocess_roboflow_dataset.py	80	process_split	FunctionDef	source_dir, annotation_file, output_dir	Copy a COCO split and merge apple-* categories into class 1.	True	True	True
+src/preprocess_roboflow_dataset.py	304	main	FunctionDef		Prepare train and valid apple-only COCO splits and print counts.	False	True	True
+src/train_baseline.py	51	seed_everything	FunctionDef	seed: int	Seed Python, NumPy and PyTorch generators.	True	True	True
+src/train_baseline.py	73	get_sample_key	FunctionDef	path: Path, modality: str	Build a modality-independent filename identifier.	True	True	True
+src/train_baseline.py	89	list_modality	FunctionDef	root: Path, modality: str	Find summer PNGs for one modality recursively.	True	True	True
+src/train_baseline.py	110	map_unique	FunctionDef	paths: list[Path], modality: str	Index paths while rejecting ambiguous sample identifiers.	True	True	True
+src/train_baseline.py	135	build_samples	FunctionDef	root: Path	Pair complete summer RGB, depth and branch-GT triplets.	True	True	True
+src/train_baseline.py	180	centre_crop_square	FunctionDef	image: Image.Image	Crop to the largest centred square without resampling.	True	True	False
+src/train_baseline.py	196	BranchDataset	ClassDef		Load aligned RGB-D inputs and binary branch targets.	False	False	False
+src/train_baseline.py	204	BranchDataset.__init__	FunctionDef	self, samples: list[dict[str, Any]], input_size: int=256, mask_threshold: int=127	Store paired samples and preprocessing settings.	True	True	False
+src/train_baseline.py	225	BranchDataset.__len__	FunctionDef	self	Return the number of complete samples.	False	True	False
+src/train_baseline.py	233	BranchDataset.__getitem__	FunctionDef	self, index: int	Read and preprocess one RGB-D and branch-GT sample.	True	True	True
+src/train_baseline.py	290	PixelMLP	ClassDef		Classify each RGB-D pixel independently using dense layers.	False	False	False
+src/train_baseline.py	297	PixelMLP.__init__	FunctionDef	self, in_features: int=4, hidden_dims: tuple[int, ...]=(64, 32, 16)	Construct hidden dense layers and scalar output.	True	True	False
+src/train_baseline.py	325	PixelMLP.forward	FunctionDef	self, x: torch.Tensor	Map independent pixel features to branch logits.	True	True	True
+src/train_baseline.py	345	bce_loss	FunctionDef	logits: torch.Tensor, targets: torch.Tensor	Compute binary cross-entropy directly from branch logits.	True	True	True
+src/train_baseline.py	370	evaluate	FunctionDef	model: nn.Module, loader: DataLoader, device: torch.device, threshold: float	Aggregate validation loss and foreground pixel metrics.	True	True	True
+src/train_baseline.py	423	save_visualisations	FunctionDef	model: nn.Module, dataset: Dataset, device: torch.device, output_dir: Path, count: int, threshold: float	Save validation RGB, depth, GT, prediction and overlay panels.	True	True	True
+src/train_baseline.py	513	parse_args	FunctionDef		Parse MLP training options from the process command line.	False	True	True
+src/train_baseline.py	569	main	FunctionDef		Train, select by validation Dice and export checkpoint and metrics.	False	True	True
+src/train_improved_unet.py	43	seed_everything	FunctionDef	seed	Seed Python, NumPy and PyTorch generators.	True	True	True
+src/train_improved_unet.py	65	get_key	FunctionDef	path, modality	Build a modality-independent filename identifier.	True	True	True
+src/train_improved_unet.py	81	list_modality	FunctionDef	root, modality	Find summer PNGs for one modality recursively.	True	True	True
+src/train_improved_unet.py	101	map_unique	FunctionDef	paths, modality	Index paths while rejecting ambiguous sample identifiers.	True	True	True
+src/train_improved_unet.py	126	build_samples	FunctionDef	root	Pair complete summer RGB, depth and branch-GT triplets.	True	True	True
+src/train_improved_unet.py	163	centre_crop_square	FunctionDef	img	Crop to the largest centred square without resampling.	True	True	False
+src/train_improved_unet.py	179	BranchDataset	ClassDef		Load aligned RGB-D inputs and binary branch targets.	False	False	False
+src/train_improved_unet.py	186	BranchDataset.__init__	FunctionDef	self, samples, input_size=256, mask_threshold=127	Store paired samples and preprocessing settings.	True	True	False
+src/train_improved_unet.py	201	BranchDataset.__len__	FunctionDef	self	Return the number of complete samples.	False	True	False
+src/train_improved_unet.py	208	BranchDataset.__getitem__	FunctionDef	self, index	Read and preprocess one RGB-D and branch-GT sample.	True	True	True
+src/train_improved_unet.py	254	ConvNormAct	ClassDef		Extract features with convolution, batch normalisation and ReLU.	False	False	False
+src/train_improved_unet.py	256	ConvNormAct.__init__	FunctionDef	self, in_ch, out_ch, kernel_size=3, dilation=1	Build a padded feature convolution.	True	True	False
+src/train_improved_unet.py	275	ConvNormAct.forward	FunctionDef	self, x	Transform a batch of features.	True	True	True
+src/train_improved_unet.py	292	ResidualDecoderBlock	ClassDef		Fuse resized decoder and skip features through a residual path.	False	False	False
+src/train_improved_unet.py	294	ResidualDecoderBlock.__init__	FunctionDef	self, in_ch, skip_ch, out_ch	Construct convolutions and a channel-matching shortcut.	True	True	False
+src/train_improved_unet.py	316	ResidualDecoderBlock.forward	FunctionDef	self, x, skip=None	Resize to the skip grid, concatenate and add a residual projection.	True	True	True
+src/train_improved_unet.py	338	AttentionGate	ClassDef		Weight encoder skip features using decoder context.	False	False	False
+src/train_improved_unet.py	340	AttentionGate.__init__	FunctionDef	self, gate_ch, skip_ch, inter_ch	Construct context projections and scalar spatial attention.	True	True	False
+src/train_improved_unet.py	355	AttentionGate.forward	FunctionDef	self, gate, skip	Apply sigmoid attention while retaining the skip shape.	True	True	True
+src/train_improved_unet.py	374	ASPP	ClassDef		Combine parallel convolutions at dilation rates 1, 2, 4 and 6.	False	False	False
+src/train_improved_unet.py	380	ASPP.__init__	FunctionDef	self, in_ch, out_ch	Construct four branches and a context projection.	True	True	False
+src/train_improved_unet.py	405	ASPP.forward	FunctionDef	self, x	Fuse multiscale features without changing the spatial grid.	True	True	True
+src/train_improved_unet.py	422	ImprovedResNet34UNet	ClassDef		Predict branch logits with a four-channel ResNet-34 U-Net.	False	False	False
+src/train_improved_unet.py	429	ImprovedResNet34UNet.__init__	FunctionDef	self, in_channels=4, pretrained=True	Construct encoder and decoder layers.	True	True	True
+src/train_improved_unet.py	480	ImprovedResNet34UNet.forward	FunctionDef	self, x	Decode RGB-D features into full-resolution branch logits.	True	True	True
+src/train_improved_unet.py	514	bce_loss	FunctionDef	logits, targets	Compute binary cross-entropy directly from branch logits.	True	True	True
+src/train_improved_unet.py	536	evaluate	FunctionDef	model, loader, device, threshold	Aggregate validation loss and foreground pixel metrics.	True	True	True
+src/train_improved_unet.py	578	save_visualisations	FunctionDef	model, dataset, device, output_dir, count, threshold	Save validation RGB, depth, GT, prediction and overlay panels.	True	True	True
+src/train_improved_unet.py	634	main	FunctionDef		Train, select by validation Dice and export checkpoint and metrics.	False	True	True
+src/train_unet.py	42	seed_everything	FunctionDef	seed	Seed Python, NumPy and PyTorch generators.	True	True	True
+src/train_unet.py	64	get_key	FunctionDef	path, modality	Build a modality-independent filename identifier.	True	True	True
+src/train_unet.py	80	list_modality	FunctionDef	root, modality	Find summer PNGs for one modality recursively.	True	True	True
+src/train_unet.py	100	map_unique	FunctionDef	paths, modality	Index paths while rejecting ambiguous sample identifiers.	True	True	True
+src/train_unet.py	125	build_samples	FunctionDef	root	Pair complete summer RGB, depth and branch-GT triplets.	True	True	True
+src/train_unet.py	162	centre_crop_square	FunctionDef	img	Crop to the largest centred square without resampling.	True	True	False
+src/train_unet.py	178	BranchDataset	ClassDef		Load aligned RGB-D inputs and binary branch targets.	False	False	False
+src/train_unet.py	185	BranchDataset.__init__	FunctionDef	self, samples, input_size=256, mask_threshold=127	Store paired samples and preprocessing settings.	True	True	False
+src/train_unet.py	200	BranchDataset.__len__	FunctionDef	self	Return the number of complete samples.	False	True	False
+src/train_unet.py	207	BranchDataset.__getitem__	FunctionDef	self, index	Read and preprocess one RGB-D and branch-GT sample.	True	True	True
+src/train_unet.py	253	ResNet34UNet	ClassDef		Predict branch logits with a four-channel ResNet-34 U-Net.	False	False	False
+src/train_unet.py	259	ResNet34UNet.__init__	FunctionDef	self, in_channels=4, pretrained=True	Construct encoder and decoder layers.	True	True	True
+src/train_unet.py	309	ResNet34UNet._decoder_block	FunctionDef	in_ch, mid_ch, out_ch	Construct a two-convolution decoder feature block.	True	True	False
+src/train_unet.py	330	ResNet34UNet._up_to	FunctionDef	x, reference	Match a feature map to an encoder grid before concatenation.	True	True	True
+src/train_unet.py	344	ResNet34UNet.forward	FunctionDef	self, x	Decode RGB-D features into full-resolution branch logits.	True	True	True
+src/train_unet.py	373	bce_loss	FunctionDef	logits, targets	Compute binary cross-entropy directly from branch logits.	True	True	True
+src/train_unet.py	395	evaluate	FunctionDef	model, loader, device, threshold	Aggregate validation loss and foreground pixel metrics.	True	True	True
+src/train_unet.py	437	save_visualisations	FunctionDef	model, dataset, device, output_dir, count, threshold	Save validation RGB, depth, GT, prediction and overlay panels.	True	True	True
+src/train_unet.py	493	main	FunctionDef		Train, select by validation Dice and export checkpoint and metrics.	False	True	True
+src/winter_inference.py	30	crop_square	FunctionDef	im	Crop a PIL image to its largest centred square.	True	True	False
+src/winter_inference.py	42	sample_key	FunctionDef	p, pat	Replace the first modality token, retaining frame identity.	True	True	False
+src/winter_inference.py	54	discover	FunctionDef	root	Find complete winter RGB/depth pairs without requiring GT.	True	True	True
+src/winter_inference.py	79	preprocess	FunctionDef	s, size	Apply training-compatible RGB-D preprocessing.	True	True	True
+src/winter_inference.py	105	PixelMLP	ClassDef		Reconstruct the training pixel MLP for checkpoint inference.	False	False	False
+src/winter_inference.py	107	PixelMLP.__init__	FunctionDef	self, hidden_dims=(64, 32, 16)	Construct four-feature pixel layers with matching checkpoint names.	True	True	False
+src/winter_inference.py	120	PixelMLP.forward	FunctionDef	self, x	Classify each pixel independently.	True	True	True
+src/winter_inference.py	135	decoder_block	FunctionDef	in_ch, mid_ch, out_ch	Construct a two-convolution decoder feature block.	True	True	False
+src/winter_inference.py	148	BasicUNet	ClassDef		Predict branch logits with a four-channel ResNet-34 U-Net.	False	False	False
+src/winter_inference.py	154	BasicUNet.__init__	FunctionDef	self	Construct encoder and decoder layers.	False	True	False
+src/winter_inference.py	167	BasicUNet.up	FunctionDef	x, ref	Match a feature map to an encoder grid before concatenation.	True	True	True
+src/winter_inference.py	181	BasicUNet.forward	FunctionDef	self, x	Decode RGB-D features into full-resolution branch logits.	True	True	True
+src/winter_inference.py	199	ConvNormAct	ClassDef		Extract features with convolution, batch normalisation and ReLU.	False	False	False
+src/winter_inference.py	201	ConvNormAct.__init__	FunctionDef	self, ic, oc, k=3, d=1	Build a padded feature convolution.	True	True	False
+src/winter_inference.py	214	ConvNormAct.forward	FunctionDef	self, x	Transform a batch of features.	True	True	True
+src/winter_inference.py	229	ResidualDecoderBlock	ClassDef		Fuse resized decoder and skip features through a residual path.	False	False	False
+src/winter_inference.py	231	ResidualDecoderBlock.__init__	FunctionDef	self, ic, sc, oc	Construct convolutions and a channel-matching shortcut.	True	True	False
+src/winter_inference.py	243	ResidualDecoderBlock.forward	FunctionDef	self, x, skip=None	Resize to the skip grid, concatenate and add a residual projection.	True	True	True
+src/winter_inference.py	259	AttentionGate	ClassDef		Weight encoder skip features using decoder context.	False	False	False
+src/winter_inference.py	261	AttentionGate.__init__	FunctionDef	self, gc, sc, ic	Construct context projections and scalar spatial attention.	True	True	False
+src/winter_inference.py	273	AttentionGate.forward	FunctionDef	self, g, s	Apply sigmoid attention while retaining the skip shape.	True	True	True
+src/winter_inference.py	288	ASPP	ClassDef		Combine parallel convolutions at dilation rates 1, 2, 4 and 6.	False	False	False
+src/winter_inference.py	294	ASPP.__init__	FunctionDef	self, ic, oc	Construct four branches and a context projection.	True	True	False
+src/winter_inference.py	306	ASPP.forward	FunctionDef	self, x	Fuse multiscale features without changing the spatial grid.	True	True	True
+src/winter_inference.py	321	ImprovedUNet	ClassDef		Predict branch logits with a four-channel ResNet-34 U-Net.	False	False	False
+src/winter_inference.py	328	ImprovedUNet.__init__	FunctionDef	self	Construct encoder and decoder layers.	False	True	False
+src/winter_inference.py	338	ImprovedUNet.forward	FunctionDef	self, x	Decode RGB-D features into full-resolution branch logits.	True	True	True
+src/winter_inference.py	356	load_checkpoint	FunctionDef	model, path, device	Load matching parameters strictly and select evaluation mode.	True	True	True
+src/winter_inference.py	377	save_outputs	FunctionDef	rgbim, depthim, mask, outdir, stem	Save a prediction, orange overlay and four-panel comparison.	True	True	True
+src/winter_inference.py	403	sync	FunctionDef	device	Finish CUDA kernels before wall-clock timing.	True	True	True
+src/winter_inference.py	417	benchmark	FunctionDef	model, samples, name, outroot, device, size, threshold, warmup	Measure model-only latency and export winter predictions.	True	True	True
+src/winter_inference.py	457	main	FunctionDef		Load three checkpoints and benchmark paired winter images.	False	True	True
+test/helpers.py	10	detection	FunctionDef	x=5, y=5, apple_id=1, image='frame.png'	Create a one-pixel inclusive-box detection for matching/CSV fixtures.	True	True	False
+test/test_apple_comparison.py	9	ComparisonTests	ClassDef		Verify reference-relative matching and CSV contracts with hand-calculated fixtures.	False	False	False
+test/test_apple_comparison.py	11	ComparisonTests.test_exact_match	FunctionDef	self	Match coincident centroids even at zero pixel tolerance.	False	False	False
+test/test_apple_comparison.py	15	ComparisonTests.test_inclusive_distance	FunctionDef	self	Accept a 3-4-5 displacement exactly at the five-pixel matching boundary.	False	False	False
+test/test_apple_comparison.py	19	ComparisonTests.test_beyond_distance	FunctionDef	self	Reject the same displacement when tolerance is below five pixels.	False	False	False
+test/test_apple_comparison.py	23	ComparisonTests.test_one_to_one	FunctionDef	self	Prevent two reference detections from sharing one prediction.	False	False	False
+test/test_apple_comparison.py	27	ComparisonTests.test_maximum_cardinality_before_distance	FunctionDef	self	Prefer two valid pairs over a closer assignment that leaves a valid match unused.	False	False	False
+test/test_apple_comparison.py	32	ComparisonTests.test_precision_recall_f1	FunctionDef	self	Check TP=2, FP=1, FN=2 against independent fraction calculations.	False	False	False
+test/test_apple_comparison.py	38	ComparisonTests.test_count_errors	FunctionDef	self	Check signed bias, MAE and RMSE for frame errors of minus two and plus one.	False	False	False
+test/test_apple_comparison.py	46	ComparisonTests.test_inclusive_iou	FunctionDef	self	Count boundary pixels when computing identical, overlapping and disjoint box IoUs.	False	False	False
+test/test_apple_comparison.py	54	ComparisonTests.test_empty_detections_and_zero_image	FunctionDef	self	Retain a processed empty frame; undefined F1 is zero and distance is absent.	False	False	False
+test/test_apple_comparison.py	64	ComparisonTests.test_exact_filename_matching	FunctionDef	self	Treat differently capitalised basenames as different frame identities.	False	False	False
+test/test_apple_comparison.py	70	ComparisonTests.test_invalid_thresholds	FunctionDef	self	Reject negative, infinite and NaN matching tolerances even for empty lists.	False	False	False
+test/test_apple_comparison.py	76	ComparisonTests.test_csv_round_trip_and_geometry_duplicates	FunctionDef	self	Retain duplicate geometry with distinct IDs while reporting the duplicate.	False	False	False
+test/test_apple_comparison.py	85	ComparisonTests.test_duplicate_ids_rejected	FunctionDef	self	Reject repeated apple IDs within the same image.	False	False	False
+test/test_apple_comparison.py	93	ComparisonTests.test_invalid_detection_records	FunctionDef	self	Reject nonfinite coordinates and invalid area, overlap, confidence, boxes and IDs.	False	False	False
+test/test_apple_comparison.py	103	ComparisonTests.test_counts_include_zero_and_validate_discrepancy	FunctionDef	self	Preserve zero-count records and reject a conflicting instance record.	False	False	False
+test/test_apple_comparison.py	112	ComparisonTests.test_missing_csv_header	FunctionDef	self	Reject an empty CSV instead of treating missing headers as an empty result.	False	False	False
+test/test_apple_detector.py	11	DetectorTests	ClassDef		Verify colour, geometry and exports on a synthetic 16x16 RGB-D frame.	False	False	False
+test/test_apple_detector.py	13	DetectorTests.setUp	FunctionDef	self	Create a 4x4 red component and restore morphology/area patches after each test.	False	False	False
+test/test_apple_detector.py	24	DetectorTests.candidates	FunctionDef	self	Return current fixture candidates using patched constants and the live detector.	False	False	False
+test/test_apple_detector.py	28	DetectorTests.test_red_dominance_and_non_red	FunctionDef	self	Reject non-red pixels and exact red/dominance boundaries; comparisons are strict.	False	False	False
+test/test_apple_detector.py	35	DetectorTests.test_invalid_depth	FunctionDef	self	Accept only positive stored depth values, including signed-array edge cases.	False	False	False
+test/test_apple_detector.py	40	DetectorTests.test_morphology_removes_isolated_noise	FunctionDef	self	Remove a single noise pixel while preserving the centre of a larger region.	False	False	False
+test/test_apple_detector.py	51	DetectorTests.test_morphology_closes_internal_hole	FunctionDef	self	Fill a one-pixel internal hole with a diameter-three elliptical kernel.	False	False	False
+test/test_apple_detector.py	59	DetectorTests.test_minimum_area_boundary	FunctionDef	self	Accept area equal to the lower bound and reject it when the bound increases.	False	False	False
+test/test_apple_detector.py	66	DetectorTests.test_bbox	FunctionDef	self	Recover the synthetic component as x=5, y=4, width=4, height=4.	False	False	False
+test/test_apple_detector.py	70	DetectorTests.test_centroid	FunctionDef	self	Locate the component pixel mean at fractional original-image coordinates.	False	False	False
+test/test_apple_detector.py	74	DetectorTests.test_branch_rejection	FunctionDef	self	Reject every candidate when the aligned branch mask is empty.	False	False	False
+test/test_apple_detector.py	79	DetectorTests.test_branch_dilation	FunctionDef	self	Verify a diameter-three ellipse produces a five-pixel cross, not a radius-three disk.	False	False	False
+test/test_apple_detector.py	89	DetectorTests.test_shape_validation	FunctionDef	self	Reject mismatched RGB/depth grids before connected-component processing.	False	False	False
+test/test_apple_detector.py	94	DetectorTests.test_zero_apples	FunctionDef	self	Return no candidates or instance rows for an image without red foreground.	False	False	False
+test/test_apple_detector.py	100	DetectorTests.test_instance_csv_export_and_zero_count	FunctionDef	self	Check inclusive boxes, blank confidence and zero-count frames in temporary CSVs.	False	False	False
+test/test_grid_search.py	12	GridTests	ClassDef		Verify enumeration and mocked resume; passing bug characterization is not a fix.	False	False	False
+test/test_grid_search.py	14	GridTests.test_full_cartesian_grid	FunctionDef	self	Enumerate all 5184 unique IDs/configurations and recover every search-space value.	False	False	False
+test/test_grid_search.py	25	GridTests.test_baseline_matches_actual_detector_and_occurs_once	FunctionDef	self	Check baseline constants against live detector defaults and exact grid membership.	False	False	False
+test/test_grid_search.py	30	GridTests.test_only_traditional_parameters_vary	FunctionDef	self	Keep branch dilation and overlap fixed outside the seven-parameter grid.	False	False	False
+test/test_grid_search.py	38	GridTests.test_tiny_cartesian_configuration	FunctionDef	self	Check stable run numbering and Cartesian order using a patched two-by-two grid.	False	False	False
+test/test_grid_search.py	47	GridTests.test_objective_directions	FunctionDef	self	Maximise agreement, minimise errors and minimise absolute signed count bias.	False	False	False
+test/test_grid_search.py	59	GridTests.test_invalid_numeric_scores_rank_last	FunctionDef	self	Orient invalid and nonfinite numeric scores to negative infinity in both directions.	False	False	False
+test/test_grid_search.py	65	GridTests.test_baseline_wins_tie	FunctionDef	self	Prefer exact baseline values over a lexically earlier tied configuration.	False	False	False
+test/test_grid_search.py	71	GridTests.test_tree_partition_is_grouped_and_deterministic	FunctionDef	self	Keep three frames per synthetic tree together and observe both hash partitions.	False	False	False
+test/test_grid_search.py	82	GridTests.test_result_persistence_schema_and_resume_ids	FunctionDef	self	Round-trip two rows and reject an incompatible resume CSV header.	False	False	False
+test/test_grid_search.py	99	GridTests.test_configuration_evaluation_records_metrics_without_outputs	FunctionDef	self	Use a stub detector on a two-pixel frame to check metrics and in-memory constants.	False	False	False
+test/test_grid_search.py	114	GridTests.test_missing_dynamic_module	FunctionDef	self	Raise FileNotFoundError before attempting to import an absent predictor file.	False	False	False
+test/test_grid_search.py	118	GridTests.test_changed_objective_reuses_heldout_known_limitation	FunctionDef	self	Reproduce stale held-out reuse with tiny mocked data and temporary files.	False	False	False

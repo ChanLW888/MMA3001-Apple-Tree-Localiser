@@ -2,9 +2,19 @@
 
 This Numerical Methods and Machine Learning project investigates RGB-D tree-branch segmentation and 2D apple localisation in orchard images. It compares a pixel MLP, a basic ResNet-34 U-Net and an extended U-Net for branch segmentation, alongside a traditional red-component detector and RF-DETR apple instance segmentation.
 
-The engineering objective is reproducible image-space apple candidates and branch predictions that could support later 3D reconstruction. **The current traditional apple detector uses ground-truth branch masks. RF-DETR also defaults to branch GT.** The scripts do not automatically connect trained branch networks to apple detection. Depth is a validity filter in traditional detection, not a calibrated source of 3D apple coordinates. RF-DETR detection does not read depth.
+For an orchard robot, image-space fruit candidates and structural branch masks
+could inform later sensing, obstacle reasoning and harvesting-system development.
+This repository studies that perception stage. It does not implement a picking
+controller, collision-safe robot motion, calibrated 3D apple locations or the
+three-dimensional skeleton output described in the brief's suggested reconstruction
+topic. Confirm that this narrower project scope meets the teaching team's agreement.
+
+The engineering objective is reproducible image-space apple candidates and branch predictions that could support later 3D reconstruction. **The standalone traditional and RF-DETR detectors default to branch GT.** The new `apple_predictor_predicted_compare.py` driver connects improved U-Net predictions to traditional detection, with an optional aligned-GT control. Depth is a validity filter in traditional detection, not a calibrated source of 3D apple coordinates. RF-DETR detection does not read depth.
 
 ## Repository map
+
+For a short assessment route, use the [reviewer starting point](docs/source/reviewer_start.md).
+It separates checks requiring no orchard files from full experiment reproduction.
 
 | Location | Maintained content |
 |---|---|
@@ -45,7 +55,7 @@ python src/compare_apple_detectors.py --max-distance 30 --thresholds 10 20 30 40
 ### Create the RF-DETR environment
 
 ```powershell
-conda env create -f rfdetr_environment.yml
+conda env create --name rfdetr -f rfdetr_environment.yml
 conda activate rfdetr
 ```
 
@@ -147,6 +157,38 @@ Configuration is through module constants, with summer defaults. Processing sele
 
 Branch GT is converted to grayscale, stretched over the full RGB grid using nearest-neighbour interpolation, and interpreted as foreground >0. RGB and depth must have matching spatial dimensions. Unexpected names or missing companions are skipped with warnings. An empty/missing RGB folder returns without producing new results.
 
+Depth validity applies to the initial red-pixel mask. Subsequent closing can fill
+non-red or invalid-depth pixels; final component pixels are not individually
+guaranteed to satisfy the initial colour/depth tests.
+
+## Predicted versus GT branch experiments
+
+The [experiment guide](docs/source/predicted_branches.md) covers every CLI option,
+alignment, timings and cache limitations. In `mma3001`, with an existing improved
+U-Net checkpoint and saved RF-DETR counts/instances CSVs:
+
+```powershell
+python src/apple_predictor_predicted_compare.py --help
+python src/apple_predictor_predicted_compare.py --checkpoint outputs/improved_resnet34_unet_output/improved_resnet34_unet_best.pth --also-gt-control
+```
+
+Supply the actual checkpoint path if a historical run used another directory.
+Fresh predictions use checkpoint `input_size` (fallback 256), training-compatible
+RGB-D preprocessing and sigmoid >=0.5. Predicted masks are **not GT**. They are
+expanded into the original frame's central square; apple detection uses full-frame
+RGB/depth. The control uses GT >127 with that same projection, differing from the
+standalone traditional detector's GT >0/full-frame resize.
+
+Default outputs are `outputs/apple_detection_predicted`,
+`outputs/apple_detector_comparison_predicted` and square masks in
+`outputs/branch_predictions`. The control writes `outputs/apple_detection_gt_aligned`
+and `outputs/apple_detector_comparison_gt_aligned`. RF-DETR remains a fixed
+pseudo-reference and is not run. Use distinct directories for new experiments;
+CSVs and matching PNGs are overwritten. `--reuse-masks` skips model loading but
+does not verify cached masks against the requested checkpoint/threshold.
+Summer training/validation overlap prevents an independent generalisation claim.
+Source defaults do not prove historical reference settings.
+
 ## RF-DETR apple detection
 
 With a previously trained checkpoint at `outputs/rfdetr_apple_tree/checkpoint_best_total.pth`:
@@ -157,7 +199,7 @@ python src/apple_segmenter_v1.py
 
 The script loads `RFDETRSegMedium`, applies confidence >=0.20, instance mask >0.50, minimum area 1 pixel and branch overlap >=0.05. It assumes an apple-only checkpoint; there is no class-ID filter. Branch masks are thresholded >127 and, by default, expanded into the central square of the original image before dilation (diameter 100). This geometry differs from traditional detection. Largest-branch-component filtering is disabled by default.
 
-`BRANCH_SOURCE = "gt"` is the default. Optional `"predicted"` mode reads externally supplied `outputs/branch_predictions/<RGB-stem>\_branch.png` masks encoded 0/255; 0/1 PNG values fail the >127 cutoff. Winter benchmark mask filenames/layout do not directly match this convention. No automatic conversion or branch-network call exists. Confirm field-of-view geometry before interpreting detections.
+`BRANCH_SOURCE = "gt"` is the default. Optional `"predicted"` mode reads externally supplied `outputs/branch_predictions/<RGB-stem>_branch.png` masks encoded 0/255; 0/1 PNG values fail the >127 cutoff. Winter benchmark mask filenames/layout do not directly match this convention. This RF-DETR script makes no branch-network call. The predicted comparison driver exports compatible square masks; winter exports require adaptation. Confirm field-of-view geometry before interpreting detections.
 
 RF-DETR training, when intentionally required, is separate:
 
@@ -191,7 +233,7 @@ The comparison uses exact basename intersection, retaining zero-detection frames
 | RF-DETR inference | `outputs/apple_rfdetr_instances/`: `annotated/`, `masks/`, `branch_zones/`, counts/instances/timings CSVs |
 | Comparison | `outputs/apple_detector_comparison/`: metrics, matches, coverage, duplicates, sensitivity, plots/examples, `input_manifest.json`, `annotation_inventory.json`, `evaluation_report.md` |
 
-See [output schemas](outputs/README.md) for CSV meanings and timing boundaries. These paths describe current source defaults, which can differ from existing historical output folders. Existing generated files have not been rerun or verified here. Reusing output directories overwrites named files; partial RF-DETR runs recreate CSVs rather than append to them and may leave older PNGs.
+See [output schemas](outputs/README.md) for CSV meanings and timing boundaries. These paths describe current source defaults, which can differ from existing historical output folders. Historical experiments were not rerun. Saved files were inspected and preservation checks performed; the final audit records their provenance and validation limits. Reusing output directories overwrites named files; partial RF-DETR runs recreate CSVs rather than append to them and may leave older PNGs.
 
 ## Reproduction and verification
 
@@ -242,7 +284,7 @@ versions are not fully fingerprinted, so metadata alone cannot ensure reproducib
 
 ## HTML documentation
 
-The Sphinx site includes all 11 maintained `src/` modules, using static AST extraction of signatures and existing docstrings. No project modules are imported. Open [submitted HTML](docs/html/index.html) directly in a browser; keep the entire `docs/html/` directory together for submission. It is outside the ignored build directory.
+The Sphinx site includes all 12 maintained `src/` modules, using static AST extraction of signatures and existing docstrings. No project modules are imported. Open [submitted HTML](docs/html/index.html) directly in a browser; keep the entire `docs/html/` directory together for submission. It is outside the ignored build directory.
 
 Rebuild from the repository root using the existing `mma3001` environment (Sphinx/MyST must already be available):
 
@@ -255,14 +297,43 @@ Open `docs/_build/html/index.html` for the build copy or `docs/html/index.html` 
 
 ## Licence
 
-[MIT License](LICENSE), copyright 2026 Chan Lik Wai, applies only to original project code owned by the repository author. It does not claim ownership of or grant redistribution rights for university-supplied orchard datasets, Roboflow datasets, third-party model weights, RF-DETR code or pretrained weights, or other externally licensed materials. Those remain subject to their respective terms and permissions. No existing project licence or explicit conflicting source notice was found; dataset provenance and third-party redistribution permissions remain unverified.
+[MIT License](LICENSE), copyright 2026 Chan Lik Wai, applies only to original project code owned by the repository author. It does not claim ownership of or grant redistribution rights for university-supplied orchard datasets, Roboflow datasets, third-party model weights, RF-DETR code or pretrained weights, or other externally licensed materials. Those remain subject to their respective terms and permissions. The repository includes the MIT licence linked above. Dataset provenance and third-party redistribution permissions remain unverified.
 
 ## Limitations and next steps
 
-Colour filtering can miss non-red, shadowed or occluded apples, merge touching apples, and detect other red objects. RF-DETR can also miss, merge, split or hallucinate objects. Neither method establishes true apple counts without independently verified annotations. Branch GT dependence prevents a fully autonomous deployment claim; mask geometry requires independent confirmation. RGB-D channel scaling does not establish physical depth calibration or 3D localisation. Sample-level validation may include correlated frames and is used for checkpoint selection. No new performance, hardware measurements or experiments are claimed.
+Colour filtering can miss non-red, shadowed or occluded apples, merge touching apples, and detect other red objects. RF-DETR can also miss, merge, split or hallucinate objects. Neither method establishes true apple counts without independently verified annotations. Standalone GT dependence and unvalidated predicted-branch deployment prevent a verified autonomous deployment claim; mask geometry requires independent confirmation. RGB-D channel scaling does not establish physical depth calibration or 3D localisation. Sample-level validation may include correlated frames and is used for checkpoint selection. No new performance, hardware measurements or experiments are claimed.
 
-Future work could connect predicted branches through an explicit verified alignment/export stage, evaluate on held-out human apple annotations, and use calibrated depth or reconstructed geometry for 3D positions. These are objectives, not implemented capabilities.
+Future work should verify the implemented predicted-branch alignment/export stage, evaluate on held-out human apple annotations, and use calibrated depth or reconstructed geometry for 3D positions. Calibrated 3D localisation and independently verified orchard accuracy remain unimplemented objectives.
 
 ## References and acknowledgements
 
-Author: Chan Lik Wai. Prepared for the MMA3001 Numerical Methods and Machine Learning project. The implementation uses the TreeID orchard data supplied for the project and an apple COCO export whose precise provenance/licence should be recorded before redistribution. It uses NumPy, OpenCV, Pillow, SciPy, Matplotlib, PyTorch/torchvision and RF-DETR; documentation uses Sphinx/MyST. ResNet-34, U-Net, ASPP and attention/residual blocks describe the implemented architecture. Earlier prose referred to an unnamed paper; no specific citation is recoverable from the maintained source, so bibliographic attribution remains to be supplied rather than guessed.
+Author: Chan Lik Wai. Prepared for the MMA3001 Numerical Methods and Machine Learning project. The implementation uses the TreeID orchard data supplied for the project and an apple COCO export whose precise provenance/licence should be recorded before redistribution. It uses NumPy, OpenCV, Pillow, SciPy, Matplotlib, PyTorch/torchvision and RF-DETR; documentation uses Sphinx/MyST. ResNet-34, U-Net, ASPP and attention/residual blocks describe the implemented architecture. Verified primary background references for these method families are listed in the [model guide](docs/source/models.md). They do not establish the provenance of a previously unnamed source paper; the student must still acknowledge the materials actually used.
+
+
+## Portability and submission evidence
+
+`environment.yml` pins Python 3.13.15 and PyTorch 2.13.0+cu130. The RF-DETR
+export pins Python 3.11.16, torch 2.14.0+cu130, torchvision 0.29.0+cu130 and
+rfdetr 1.9.4. Both include Windows runtime packages (`ucrt`, `vc`); the RF-DETR
+export contains the author's absolute `prefix`. These are environment snapshots,
+not portable lockfiles. CUDA wheels require a suitable package source/cache and
+compatible drivers; neither export configures a CUDA wheel index. The RF-DETR
+torch/torchaudio/torchvision combination needs clean-install verification.
+No dependency versions were changed by this audit. Create RF-DETR at an explicit
+chosen path/name rather than relying on the author's prefix. Resolve platform
+packages deliberately on other operating systems. The organiser uses Windows paths.
+
+Local data, historical checkpoints and results exist in this working copy but are
+ignored by Git. Clone/ZIP recipients need separately permitted data/weight access
+and checksums. The [final audit](docs/final_audit.md) records availability, checks,
+known issues and the official rubric assessment. The 2026 brief was found in the
+parent MMA3001 course directory; its requirements and all six rubric rows are
+assessed in the audit, alongside the additional review requirements supplied here.
+
+## AI assistance and student reflection
+
+Codex assisted with this final source/documentation review, documentation edits,
+report prose and verification commands. [AI disclosure](docs/ai_disclosure.md)
+separates observable assistance from the student's outstanding account of earlier
+ChatGPT/Codex use, approximate contribution, decisions, verification and reflection.
+No personal contribution percentages or human verification are inferred here.

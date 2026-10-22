@@ -21,6 +21,6 @@ GT must already describe the same centred field of view, not merely share dimens
 
 ## Apple mask distinctions
 
-Traditional apple detection retains original RGB/depth grids and requires equal spatial dimensions. Depth >0 means valid; GT is full-frame nearest-neighbour resized, with foreground >0. RF-DETR does not use depth; its GT foreground cutoff is >127, default alignment centres a square mask in the original frame, and predicted mode only reads external masks. Both dilate branch regions using a diameter-100 ellipse by default; differing alignment/cutoffs still create different regions.
+Traditional apple detection retains original RGB/depth grids and requires equal spatial dimensions. Depth >0 means valid; GT is full-frame nearest-neighbour resized, with foreground >0. RF-DETR does not use depth; its GT foreground cutoff is >127, default alignment centres a square mask in the original frame, and its predicted mode reads exported masks. The predicted comparison driver instead runs the improved U-Net or reuses square masks and projects them centrally; its optional GT control also thresholds >127. Both dilate branch regions using a diameter-100 ellipse by default; differing alignment/cutoffs still create different regions.
 
 Branch GT is not apple-instance annotation. COCO files may contain apple annotations, but authorship, frame correspondence and train/evaluation separation require verification. RF-DETR detections used for comparison are pseudo-ground truth and do not establish real accuracy.

@@ -14,6 +14,10 @@ Uses plain BCE, AdamW (weight decay 1e-4), a validation-Dice plateau scheduler a
 paired flips. RGB brightness/contrast perturbation operates after normalisation, leaving
 depth unchanged. Architecture intent does not establish improved measured accuracy.
 
+Requires complete summer RGB/depth/branch-GT triplets. Writes the best checkpoint,
+history.csv, val_metrics.csv and validation panels under
+outputs/improved_resnet34_unet_output by default; named files can be overwritten.
+
 .. rubric:: Example
 
 python src/train_improved_unet.py --data-root data/Organised --no-pretrained

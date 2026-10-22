@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>apple_predictor_predicted_compare &#8212; MMA3001 Source Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=d5f7d5f2" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="apple_predictor_v1" href="apple_predictor_v1.html" />
+    <link rel="prev" title="Source API reference" href="index.html" />
+
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+
+
+
+
+
+  </head><body>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+
+
+          <div class="body" role="main">
+
+  <section id="module-apple_predictor_predicted_compare">
+<span id="apple-predictor-predicted-compare"></span><h1>apple_predictor_predicted_compare<a class="headerlink" href="#module-apple_predictor_predicted_compare" title="Link to this heading">¶</a></h1>
+<p>Source: <code class="docutils literal notranslate"><span class="pre">src/apple_predictor_predicted_compare.py</span></code>.</p>
+<p>Statically extracted signatures and existing docstrings; no module execution.</p>
+<p>Use improved U-Net branch predictions for traditional apple detection, then compare.</p>
+<dl class="simple">
+<dt>Run from the repository root with the mma3001 environment:</dt><dd><p>python src/apple_predictor_predicted_compare.py</p>
+</dd>
+</dl>
+<p>Default workflow: load a trusted improved U-Net checkpoint, infer a branch mask for
+<em>each summer RGB-D frame</em>, put the checkpoint-sized square prediction (256 by
+default) back into the central square
+of the original RGB image, run the UNCHANGED traditional apple candidate detector,
+export compatible prediction CSVs, and immediately compare them against the EXISTING
+RF-DETR pseudo-reference CSVs. The RF-DETR model is NOT run or modified.</p>
+<p>Optional –also-gt-control runs an equivalent traditional detection experiment with
+GT branch masks using the SAME centre-square alignment. This is a more controlled
+comparison of predicted vs GT branches than using historical full-resize results.</p>
+<p>IMPORTANT: On summer training/validation images this is not an independent test of
+branch-network generalisation. RF-DETR CSVs are pseudo-ground truth, not apple GT.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="apple_predictor_predicted_compare.centre_square_mask">
+<span class="sig-prename descclassname"><span class="pre">apple_predictor_predicted_compare.</span></span><span class="sig-name descname"><span class="pre">centre_square_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mask_2d</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">np.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">np.ndarray</span></span></span><a class="headerlink" href="#apple_predictor_predicted_compare.centre_square_mask" title="Link to this definition">¶</a></dt>
+<dd><p>Project branch foreground into the original image’s central square.</p>
+<p>Uses nearest-neighbour resize to min(H, W), then zero padding. Unlike
+RF-DETR’s helper, there is no same-size shortcut: every mask is projected.
+Nonsquare 2D inputs are stretched to a square, not explicitly rejected.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mask_2d</strong> – numpy.ndarray [Hm, Wm]; values &gt;0 denote foreground.</p></li>
+<li><p><strong>image_shape</strong> – tuple[int, int]; positive original (height, width), pixels.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>uint8 [H, W] mask encoded 0/255.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If mask_2d is not 2D or image_shape cannot be unpacked.</p></li>
+<li><p><strong>cv2.error</strong> – If input or resize dimensions are invalid.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="apple_predictor_predicted_compare.load_improved_model">
+<span class="sig-prename descclassname"><span class="pre">apple_predictor_predicted_compare.</span></span><span class="sig-name descname"><span class="pre">load_improved_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">checkpoint_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">requested_device</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#apple_predictor_predicted_compare.load_improved_model" title="Link to this definition">¶</a></dt>
+<dd><p>Load a local improved U-Net checkpoint without training or downloads.</p>
+<p>Reconstructs winter_inference.ImprovedUNet with weights=None, strictly loads
+state keys, moves to the selected device and enters evaluation mode.
+weights_only=True restricts deserialisation; use trusted local files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>checkpoint_path</strong> – pathlib.Path to a checkpoint dictionary containing
+model_state_dict and optionally input_size, or a bare state dict.</p></li>
+<li><p><strong>requested_device</strong> – str; auto, cpu or cuda as constrained by the CLI.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Model, torch module, winter_inference module, torch.device,
+integer input side (checkpoint input_size or 256), and checkpoint dict.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>FileNotFoundError</strong> – If the checkpoint is absent.</p></li>
+<li><p><strong>TypeError</strong> – If the loaded checkpoint is not a dictionary.</p></li>
+<li><p><strong>RuntimeError</strong> – If CUDA is unavailable, state keys differ or loading fails.</p></li>
+<li><p><strong>ImportError</strong> – If torch/torchvision or winter_inference cannot be imported.</p></li>
+<li><p><strong>ValueError</strong> – If checkpoint input_size cannot be converted to int.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="apple_predictor_predicted_compare.make_branch_prediction">
+<span class="sig-prename descclassname"><span class="pre">apple_predictor_predicted_compare.</span></span><span class="sig-name descname"><span class="pre">make_branch_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rgb_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">depth_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_info</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#apple_predictor_predicted_compare.make_branch_prediction" title="Link to this definition">¶</a></dt>
+<dd><p>Infer a square branch mask with training-compatible RGB-D scaling.</p>
+<p>Reopens both images through winter.preprocess: centre crop, bilinear RGB,
+nearest-neighbour L depth, ImageNet RGB normalisation and depth/255. Uses
+inference_mode; the supplied model must already be in evaluation mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rgb_path</strong> – str or pathlib.Path to the RGB image.</p></li>
+<li><p><strong>depth_path</strong> – str or pathlib.Path to its registered depth image.</p></li>
+<li><p><strong>model_info</strong> – Six-element tuple returned by load_improved_model.</p></li>
+<li><p><strong>threshold</strong> – float in [0, 1]; inclusive sigmoid probability cutoff.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>uint8 [S, S] 0/255 prediction; S from model_info.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>OSError</strong> – If either image cannot be decoded.</p></li>
+<li><p><strong>RuntimeError</strong> – If inference or device transfer fails.</p></li>
+<li><p><strong>ValueError</strong> – If tuple unpacking or preprocessing dimensions fail.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="apple_predictor_predicted_compare.read_predicted_mask">
+<span class="sig-prename descclassname"><span class="pre">apple_predictor_predicted_compare.</span></span><span class="sig-name descname"><span class="pre">read_predicted_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">np.ndarray</span></span></span><a class="headerlink" href="#apple_predictor_predicted_compare.read_predicted_mask" title="Link to this definition">¶</a></dt>
+<dd><p>Read a cached square grayscale mask and threshold intensities &gt;127.</p>
+<p>An all-zero mask is valid. A mask whose maximum is exactly 1 is rejected;
+other grayscale encodings are accepted and thresholded, not validated as
+strictly binary 0/255. Provenance and threshold compatibility are not checked.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – pathlib.Path to an existing square PNG, normally encoded 0/255.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>uint8 [S, S] mask in {0, 255}.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>FileNotFoundError</strong> – If path is not a file.</p></li>
+<li><p><strong>ValueError</strong> – If dimensions are nonsquare or maximum intensity is 1.</p></li>
+<li><p><strong>OSError</strong> – If image decoding fails.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="apple_predictor_predicted_compare.detect_and_export">
+<span class="sig-prename descclassname"><span class="pre">apple_predictor_predicted_compare.</span></span><span class="sig-name descname"><span class="pre">detect_and_export</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frames</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_info</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#apple_predictor_predicted_compare.detect_and_export" title="Link to this definition">¶</a></dt>
+<dd><p>Detect full-frame apple candidates using projected branch masks.</p>
+<p>Uses detector.find_apple_candidates unchanged. Overwrites CSVs, metadata
+and matching annotation PNGs; old unmatched PNGs can remain. Custom paths
+can overwrite other experiments, so keep output directories distinct.
+branch_ms includes inference/read, mask save and alignment; detection_ms
+excludes branch prediction. total_ms excludes final CSV/metadata export and
+model loading, and is not winter’s model-only timing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>frames</strong> – Sequence of (RGB Path, parsed info dict, depth Path, GT Path).</p></li>
+<li><p><strong>source</strong> – str; predicted or gt. GT is thresholded &gt;127 before projection.</p></li>
+<li><p><strong>args</strong> – argparse.Namespace from main; supplies output/mask paths,
+checkpoint, season, reuse_masks and probability threshold.</p></li>
+<li><p><strong>model_info</strong> – load_improved_model tuple; required for fresh predictions,
+unused for GT and cached-mask reuse.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Number of processed frames. Writes counts/instances/timing CSVs,
+run_metadata.json and flat annotation PNGs; fresh predictions also write
+&lt;RGB-stem&gt;_branch.png square masks.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If source or RGB/depth dimensions are invalid.</p></li>
+<li><p><strong>FileNotFoundError</strong> – If a required GT or cached mask is absent.</p></li>
+<li><p><strong>OSError</strong> – If image/CSV/metadata reading or writing fails.</p></li>
+<li><p><strong>RuntimeError</strong> – If branch inference fails.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Reused masks are not fingerprinted. Metadata’s checkpoint and threshold
+describe the requested configuration, not verified cached-mask provenance.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="apple_predictor_predicted_compare.detect_and_export.write_csv">
+<span class="sig-prename descclassname"><span class="pre">detect_and_export.</span></span><span class="sig-name descname"><span class="pre">write_csv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rows</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#apple_predictor_predicted_compare.detect_and_export.write_csv" title="Link to this definition">¶</a></dt>
+<dd><p>Overwrite one experiment CSV, including its header for empty rows.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> – str basename relative to the enclosing output_dir.</p></li>
+<li><p><strong>columns</strong> – Sequence[str] specifying exact CSV column order.</p></li>
+<li><p><strong>rows</strong> – Iterable[dict] compatible with columns.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>OSError</strong> – If file creation or writing fails.</p></li>
+<li><p><strong>ValueError</strong> – If a row has unexpected keys.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="apple_predictor_predicted_compare.run_comparison">
+<span class="sig-prename descclassname"><span class="pre">apple_predictor_predicted_compare.</span></span><span class="sig-name descname"><span class="pre">run_comparison</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">traditional_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#apple_predictor_predicted_compare.run_comparison" title="Link to this definition">¶</a></dt>
+<dd><p>Run saved-CSV comparison and adapt its report prose for this workflow.</p>
+<p>Matching and metric calculation belong to compare_apple_detectors.py.
+Report replacements depend on paragraph prefixes; they do not validate
+historical RF-DETR branch settings. Retain the reference run’s provenance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>traditional_dir</strong> – pathlib.Path containing counts and instances CSVs.</p></li>
+<li><p><strong>output_dir</strong> – pathlib.Path for comparison reports, CSVs, plots and examples.</p></li>
+<li><p><strong>args</strong> – argparse.Namespace with reference_dir, rgb_dir and max_distance.</p></li>
+<li><p><strong>source</strong> – str; predicted or gt, used for report interpretation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>First summary_metrics.csv row; prints selected metrics.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str, str]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>subprocess.CalledProcessError</strong> – If the comparison subprocess fails.</p></li>
+<li><p><strong>OSError</strong> – If report or summary cannot be accessed.</p></li>
+<li><p><strong>StopIteration</strong> – If the summary has no data row.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="apple_predictor_predicted_compare.build_frames">
+<span class="sig-prename descclassname"><span class="pre">apple_predictor_predicted_compare.</span></span><span class="sig-name descname"><span class="pre">build_frames</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#apple_predictor_predicted_compare.build_frames" title="Link to this definition">¶</a></dt>
+<dd><p>Discover season-filtered RGB-D pairs, optionally requiring paired GT.</p>
+<p>Searches lowercase PNG extensions nonrecursively, skips invalid names and missing
+depth with warnings. GT is required for gt source or also_gt_control, so
+enabling the control can reduce the predicted experiment’s frame set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>args</strong> – argparse.Namespace with rgb_dir, depth_dir, gt_dir, season,
+branch_source, also_gt_control and optional positive max_images.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Sorted (RGB Path, parsed info dict, depth Path, GT Path),
+limited to the first max_images if supplied.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[tuple]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>RuntimeError</strong> – If no eligible complete pairs remain.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="apple_predictor_predicted_compare.main">
+<span class="sig-prename descclassname"><span class="pre">apple_predictor_predicted_compare.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">argv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#apple_predictor_predicted_compare.main" title="Link to this definition">¶</a></dt>
+<dd><p>Parse options, produce predictions and optionally run comparisons.</p>
+<p>Defaults to summer improved-U-Net branches and fixed existing RF-DETR CSVs.
+–branch-source gt uses gt_output_dir/gt_comparison_dir, not predicted paths.
+–reuse-masks skips model loading; –skip-comparison needs no reference CSVs.
+A requested GT control uses the same discovered frame set and apple filters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>argv</strong> – Sequence[str] or None; CLI arguments, or sys.argv[1:] when None.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None. Writes experiment outputs and prints progress/summary metrics.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>SystemExit</strong> – For help, invalid threshold/image limit, redundant control,
+invalid CLI options or missing required reference CSVs.</p></li>
+<li><p><strong>RuntimeError</strong> – If no paired frames exist or model execution fails.</p></li>
+<li><p><strong>OSError</strong> – If required inputs/outputs cannot be accessed.</p></li>
+<li><p><strong>subprocess.CalledProcessError</strong> – If saved-CSV comparison fails.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+          </div>
+
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Apple Tree Localiser — MMA3001</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Project documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../reviewer_start.html">Reviewer starting point and reproduction levels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../workflows.html">Apple workflows and environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../predicted_branches.html">Predicted branches versus GT branches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data_and_preprocessing.html">Data and preprocessing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../models.html">Model architectures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../training_and_evaluation.html">Training and evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Source API reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">apple_predictor_predicted_compare</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apple_predictor_v1.html">apple_predictor_v1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apple_segmenter_train.html">apple_segmenter_train</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apple_segmenter_v1.html">apple_segmenter_v1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="compare_apple_detectors.html">compare_apple_detectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dataset_organiser.html">dataset_organiser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="full_grid_search_apple.html">full_grid_search_apple</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preprocess_roboflow_dataset.html">preprocess_roboflow_dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="train_baseline.html">train_baseline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="train_improved_unet.html">train_improved_unet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="train_unet.html">train_unet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="winter_inference.html">winter_inference</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Source API reference</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Source API reference</a></li>
+      <li>Next: <a href="apple_predictor_v1.html" title="next chapter">apple_predictor_v1</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2026, Chan Lik Wai.
+
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+
+      |
+      <a href="../_sources/api/apple_predictor_predicted_compare.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+
+
+
+  </body>
+</html>

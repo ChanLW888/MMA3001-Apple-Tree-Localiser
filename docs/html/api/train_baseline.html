@@ -16,23 +16,23 @@
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="train_improved_unet" href="train_improved_unet.html" />
     <link rel="prev" title="preprocess_roboflow_dataset" href="preprocess_roboflow_dataset.html" />
-   
-  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
-  
 
-  
-  
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+
+
+
+
 
   </head><body>
-  
+
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          
+
 
           <div class="body" role="main">
-            
+
   <section id="module-train_baseline">
 <span id="train-baseline"></span><h1>train_baseline<a class="headerlink" href="#module-train_baseline" title="Link to this heading">¶</a></h1>
 <p>Source: <code class="docutils literal notranslate"><span class="pre">src/train_baseline.py</span></code>.</p>
@@ -43,6 +43,8 @@
 field of view. The MLP has no spatial context. Uses positive-weight-12 BCE, Adam, seeded
 sample splitting and best-validation-Dice selection. Validation is not independent
 testing.</p>
+<p>Writes pixel_mlp_best.pth, history.csv, val_metrics.csv and validation panels to
+outputs/pixel_mlp_crop_trainval by default; named outputs can be overwritten.</p>
 <p class="rubric">Example</p>
 <p>python src/train_baseline.py –data-root data/Organised</p>
 <dl class="py function">
@@ -441,7 +443,7 @@ set. Use positive epochs and validation fraction strictly between 0 and 1.</p>
 
 
           </div>
-          
+
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
@@ -467,13 +469,16 @@ set. Use positive epochs and validation fraction strictly between 0 and 1.</p>
 <script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
 <p class="caption" role="heading"><span class="caption-text">Project documentation</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../reviewer_start.html">Reviewer starting point and reproduction levels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../workflows.html">Apple workflows and environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../predicted_branches.html">Predicted branches versus GT branches</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../data_and_preprocessing.html">Data and preprocessing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../models.html">Model architectures</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../training_and_evaluation.html">Training and evaluation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Source API reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="apple_predictor_predicted_compare.html">apple_predictor_predicted_compare</a></li>
 <li class="toctree-l2"><a class="reference internal" href="apple_predictor_v1.html">apple_predictor_v1</a></li>
 <li class="toctree-l2"><a class="reference internal" href="apple_segmenter_train.html">apple_segmenter_train</a></li>
 <li class="toctree-l2"><a class="reference internal" href="apple_segmenter_v1.html">apple_segmenter_v1</a></li>
@@ -514,18 +519,18 @@ set. Use positive epochs and validation fraction strictly between 0 and 1.</p>
     </div>
     <div class="footer">
       &#169;2026, Chan Lik Wai.
-      
+
       |
       Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
       &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
-      
+
       |
       <a href="../_sources/api/train_baseline.rst.txt"
           rel="nofollow">Page source</a>
     </div>
 
-    
 
-    
+
+
   </body>
 </html>

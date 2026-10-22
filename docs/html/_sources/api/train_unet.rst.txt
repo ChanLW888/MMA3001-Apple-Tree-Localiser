@@ -14,6 +14,9 @@ normalisation; grayscale depth is /255, not metres. GT must already match the sq
 grid. Produces raw [B, 1, H, W] branch logits. Uses plain BCE, Adam and validation-Dice
 checkpoint selection. Pretraining may retrieve uncached weights.
 
+Writes resnet34_unet_best.pth, history.csv, val_metrics.csv and visualisations
+under outputs/resnet34_unet_crop_trainval_output by default, overwriting names.
+
 .. rubric:: Example
 
 python src/train_unet.py --data-root data/Organised --no-pretrained

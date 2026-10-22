@@ -16,25 +16,36 @@
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Training and evaluation" href="training_and_evaluation.html" />
     <link rel="prev" title="Data and preprocessing" href="data_and_preprocessing.html" />
-   
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
-  
 
-  
-  
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+
+
+
+
 
   </head><body>
-  
+
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          
+
 
           <div class="body" role="main">
-            
+
   <section id="model-architectures">
 <h1>Model architectures<a class="headerlink" href="#model-architectures" title="Link to this heading">¶</a></h1>
+<p>The MLP provides an interpretable low-context baseline: it isolates what per-pixel
+colour/depth can explain. U-Net adds neighbourhood context and encoder skip features
+to preserve thin structures; the extended design explores multiscale context and
+selective skip weighting. These choices introduce convolutional computation and
+training complexity; they do not by themselves prove better accuracy, memory use
+or scalability. Use the same split and preprocessing for measured comparisons.</p>
+<p>For apples, colour/components provide a transparent baseline without learned apple
+weights but are sensitive to lighting, fruit colour and touching components.
+RF-DETR provides learned instance masks and model scores, with external training
+data/checkpoint and runtime dependencies. Its use as a reference is practical for
+agreement experiments but cannot replace independent apple annotation.</p>
 <section id="pixel-mlp">
 <h2>Pixel MLP<a class="headerlink" href="#pixel-mlp" title="Link to this heading">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">src/train_baseline.py</span></code> applies dense widths 4 -&gt;64 -&gt;32 -&gt;16 -&gt;1 with ReLU between hidden layers by default. Pixels are permuted/flattened into a feature batch, classified independently, then restored to <code class="docutils literal notranslate"><span class="pre">[B,</span> <span class="pre">1,</span> <span class="pre">H,</span> <span class="pre">W]</span></code>. Reshaping preserves pixel correspondence; it does not give the network neighbouring-pixel context. Hidden widths can be configured with <code class="docutils literal notranslate"><span class="pre">--hidden-dims</span></code>.</p>
@@ -56,11 +67,47 @@
 <p>The extended trainer also uses paired horizontal/vertical flips and RGB brightness/contrast perturbation after normalisation. Depth is not colour-jittered. Optimiser/loss differences are detailed in <a class="reference internal" href="training_and_evaluation.html"><span class="std std-doc">training and evaluation</span></a>. These changes express design intent, not verified performance improvement.</p>
 <p><code class="docutils literal notranslate"><span class="pre">src/winter_inference.py</span></code> reconstructs matching model structures/state keys with torchvision weights=None and strictly loads local checkpoints. It requires compatible architectures and trusted checkpoint files; it is not a general checkpoint converter.</p>
 </section>
+<section id="method-family-references">
+<h2>Method-family references<a class="headerlink" href="#method-family-references" title="Link to this heading">¶</a></h2>
+<p>These primary references provide background for the implemented architectural
+families. They were checked during the documentation audit; this does not assert
+that the student originally consulted them or copied a particular implementation.
+The local source remains authoritative for the actual layer widths, connections,
+preprocessing and losses. Paper results are not project performance evidence.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Family</p></th>
+<th class="head"><p>Primary reference</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Residual networks</p></td>
+<td><p>He et al. (2015), <a class="reference external" href="https://arxiv.org/abs/1512.03385">Deep Residual Learning for Image Recognition</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>U-Net</p></td>
+<td><p>Ronneberger et al. (2015), <a class="reference external" href="https://arxiv.org/abs/1505.04597">U-Net: Convolutional Networks for Biomedical Image Segmentation</a></p></td>
+</tr>
+<tr class="row-even"><td><p>Atrous spatial pyramid pooling</p></td>
+<td><p>Chen et al. (2016), <a class="reference external" href="https://arxiv.org/abs/1606.00915">DeepLab: Semantic Image Segmentation with Deep Convolutional Nets, Atrous Convolution, and Fully Connected CRFs</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>Attention gates</p></td>
+<td><p>Oktay et al. (2018), <a class="reference external" href="https://arxiv.org/abs/1804.03999">Attention U-Net: Learning Where to Look for the Pancreas</a></p></td>
+</tr>
+<tr class="row-even"><td><p>RF-DETR software</p></td>
+<td><p>Roboflow, <a class="reference external" href="https://github.com/roboflow/rf-detr">official RF-DETR repository</a>; use the locally pinned package version when reproducing this project</p></td>
+</tr>
+</tbody>
+</table>
+<p>These architectural references do not establish orchard dataset authorship, the
+provenance of a previously unnamed source paper or redistribution rights for
+external data/weights. The written report must acknowledge the materials actually
+used and distinguish background literature from the student’s own implementation.</p>
+</section>
 </section>
 
 
           </div>
-          
+
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
@@ -86,13 +133,16 @@
 <script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
 <p class="caption" role="heading"><span class="caption-text">Project documentation</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="reviewer_start.html">Reviewer starting point and reproduction levels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="workflows.html">Apple workflows and environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="predicted_branches.html">Predicted branches versus GT branches</a></li>
 <li class="toctree-l1"><a class="reference internal" href="data_and_preprocessing.html">Data and preprocessing</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Model architectures</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#pixel-mlp">Pixel MLP</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#basic-resnet-34-u-net">Basic ResNet-34 U-Net</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#extended-resnet-34-u-net">Extended ResNet-34 U-Net</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#method-family-references">Method-family references</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="training_and_evaluation.html">Training and evaluation</a></li>
@@ -123,18 +173,18 @@
     </div>
     <div class="footer">
       &#169;2026, Chan Lik Wai.
-      
+
       |
       Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
       &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
-      
+
       |
       <a href="_sources/models.md.txt"
           rel="nofollow">Page source</a>
     </div>
 
-    
 
-    
+
+
   </body>
 </html>

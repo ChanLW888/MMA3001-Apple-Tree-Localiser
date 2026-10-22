@@ -5,7 +5,8 @@ Run from the repository root with the mma3001 environment:
     python src/apple_predictor_predicted_compare.py
 
 Default workflow: load a trusted improved U-Net checkpoint, infer a branch mask for
-*each summer RGB-D frame*, put the 256x256 prediction back into the central square
+*each summer RGB-D frame*, put the checkpoint-sized square prediction (256 by
+default) back into the central square
 of the original RGB image, run the UNCHANGED traditional apple candidate detector,
 export compatible prediction CSVs, and immediately compare them against the EXISTING
 RF-DETR pseudo-reference CSVs. The RF-DETR model is NOT run or modified.
@@ -33,7 +34,7 @@ import cv2
 import numpy as np
 from PIL import Image
 
-# The script must live in src/ beside these two unchanged project modules.
+# Sibling imports rely on launching this file from its maintained src/ location.
 import apple_predictor_v1 as detector
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -45,17 +46,22 @@ DEFAULT_MASKS = ROOT / 'outputs/branch_predictions'
 
 
 def centre_square_mask(mask_2d: np.ndarray, image_shape: tuple[int, int]) -> np.ndarray:
-    """Project a square branch mask into the central square of the original image.
+    """Project branch foreground into the original image's central square.
 
-    Matches the RF-DETR code's ``align_branch_mask(..., 'center_crop')`` geometry:
-    nearest-neighbour resize to min(height, width), then zero-pad around the square.
+    Uses nearest-neighbour resize to min(H, W), then zero padding. Unlike
+    RF-DETR's helper, there is no same-size shortcut: every mask is projected.
+    Nonsquare 2D inputs are stretched to a square, not explicitly rejected.
 
     Args:
-        mask_2d: Binary 2D mask; 0 or positive values.
-        image_shape: Original RGB (height, width) in pixels.
+        mask_2d: numpy.ndarray [Hm, Wm]; values >0 denote foreground.
+        image_shape: tuple[int, int]; positive original (height, width), pixels.
 
     Returns:
-        uint8 mask of shape (height, width) with values 0 and 255.
+        numpy.ndarray: uint8 [H, W] mask encoded 0/255.
+
+    Raises:
+        ValueError: If mask_2d is not 2D or image_shape cannot be unpacked.
+        cv2.error: If input or resize dimensions are invalid.
     """
     height, width = image_shape
     if mask_2d.ndim != 2:
@@ -70,13 +76,27 @@ def centre_square_mask(mask_2d: np.ndarray, image_shape: tuple[int, int]) -> np.
 
 
 def load_improved_model(checkpoint_path: Path, requested_device: str):
-    """Load a trusted trained improved U-Net; do not re-train or download weights.
+    """Load a local improved U-Net checkpoint without training or downloads.
 
-    The exact checkpoint state keys must match the ImprovedUNet implementation in
-    winter_inference.py. Loading with weights_only=True avoids unrestricted pickle.
+    Reconstructs winter_inference.ImprovedUNet with weights=None, strictly loads
+    state keys, moves to the selected device and enters evaluation mode.
+    weights_only=True restricts deserialisation; use trusted local files.
+
+    Args:
+        checkpoint_path: pathlib.Path to a checkpoint dictionary containing
+            model_state_dict and optionally input_size, or a bare state dict.
+        requested_device: str; auto, cpu or cuda as constrained by the CLI.
 
     Returns:
-        (model, torch module, winter_inference module, device, input size, checkpoint info)
+        tuple: Model, torch module, winter_inference module, torch.device,
+        integer input side (checkpoint input_size or 256), and checkpoint dict.
+
+    Raises:
+        FileNotFoundError: If the checkpoint is absent.
+        TypeError: If the loaded checkpoint is not a dictionary.
+        RuntimeError: If CUDA is unavailable, state keys differ or loading fails.
+        ImportError: If torch/torchvision or winter_inference cannot be imported.
+        ValueError: If checkpoint input_size cannot be converted to int.
     """
     import torch
     import winter_inference as winter
@@ -99,7 +119,26 @@ def load_improved_model(checkpoint_path: Path, requested_device: str):
 
 
 def make_branch_prediction(rgb_path, depth_path, model_info, threshold: float):
-    """Perform improved U-Net RGB-D inference and return a 0/255 square mask."""
+    """Infer a square branch mask with training-compatible RGB-D scaling.
+
+    Reopens both images through winter.preprocess: centre crop, bilinear RGB,
+    nearest-neighbour L depth, ImageNet RGB normalisation and depth/255. Uses
+    inference_mode; the supplied model must already be in evaluation mode.
+
+    Args:
+        rgb_path: str or pathlib.Path to the RGB image.
+        depth_path: str or pathlib.Path to its registered depth image.
+        model_info: Six-element tuple returned by load_improved_model.
+        threshold: float in [0, 1]; inclusive sigmoid probability cutoff.
+
+    Returns:
+        numpy.ndarray: uint8 [S, S] 0/255 prediction; S from model_info.
+
+    Raises:
+        OSError: If either image cannot be decoded.
+        RuntimeError: If inference or device transfer fails.
+        ValueError: If tuple unpacking or preprocessing dimensions fail.
+    """
     model, torch, winter, device, size, _ = model_info
     input_tensor, _, _ = winter.preprocess({'rgb': rgb_path, 'depth': depth_path}, size)
     with torch.inference_mode():
@@ -109,7 +148,23 @@ def make_branch_prediction(rgb_path, depth_path, model_info, threshold: float):
 
 
 def read_predicted_mask(path: Path) -> np.ndarray:
-    """Read an existing square 0/255 predicted mask; reject 0/1-only exports."""
+    """Read a cached square grayscale mask and threshold intensities >127.
+
+    An all-zero mask is valid. A mask whose maximum is exactly 1 is rejected;
+    other grayscale encodings are accepted and thresholded, not validated as
+    strictly binary 0/255. Provenance and threshold compatibility are not checked.
+
+    Args:
+        path: pathlib.Path to an existing square PNG, normally encoded 0/255.
+
+    Returns:
+        numpy.ndarray: uint8 [S, S] mask in {0, 255}.
+
+    Raises:
+        FileNotFoundError: If path is not a file.
+        ValueError: If dimensions are nonsquare or maximum intensity is 1.
+        OSError: If image decoding fails.
+    """
     if not path.is_file():
         raise FileNotFoundError(f'Predicted branch mask missing: {path}')
     result = np.asarray(Image.open(path).convert('L'))
@@ -121,10 +176,37 @@ def read_predicted_mask(path: Path) -> np.ndarray:
 
 
 def detect_and_export(frames, source, args, model_info=None):
-    """Run unchanged traditional filtering using predicted or aligned GT branch masks.
+    """Detect full-frame apple candidates using projected branch masks.
 
-    Writes new CSVs and flat annotated PNGs to an experiment-specific directory.
-    The original outputs/apple_detection directory is never touched.
+    Uses detector.find_apple_candidates unchanged. Overwrites CSVs, metadata
+    and matching annotation PNGs; old unmatched PNGs can remain. Custom paths
+    can overwrite other experiments, so keep output directories distinct.
+    branch_ms includes inference/read, mask save and alignment; detection_ms
+    excludes branch prediction. total_ms excludes final CSV/metadata export and
+    model loading, and is not winter's model-only timing.
+
+    Args:
+        frames: Sequence of (RGB Path, parsed info dict, depth Path, GT Path).
+        source: str; predicted or gt. GT is thresholded >127 before projection.
+        args: argparse.Namespace from main; supplies output/mask paths,
+            checkpoint, season, reuse_masks and probability threshold.
+        model_info: load_improved_model tuple; required for fresh predictions,
+            unused for GT and cached-mask reuse.
+
+    Returns:
+        int: Number of processed frames. Writes counts/instances/timing CSVs,
+        run_metadata.json and flat annotation PNGs; fresh predictions also write
+        <RGB-stem>_branch.png square masks.
+
+    Raises:
+        ValueError: If source or RGB/depth dimensions are invalid.
+        FileNotFoundError: If a required GT or cached mask is absent.
+        OSError: If image/CSV/metadata reading or writing fails.
+        RuntimeError: If branch inference fails.
+
+    Note:
+        Reused masks are not fingerprinted. Metadata's checkpoint and threshold
+        describe the requested configuration, not verified cached-mask provenance.
     """
     if source not in ('predicted', 'gt'):
         raise ValueError('source must be predicted or gt')
@@ -179,6 +261,20 @@ def detect_and_export(frames, source, args, model_info=None):
         print(f'[{source} {idx}/{len(frames)}] {path.name}: {len(apples)} apples')
 
     def write_csv(filename, columns, rows):
+        """Overwrite one experiment CSV, including its header for empty rows.
+
+        Args:
+            filename: str basename relative to the enclosing output_dir.
+            columns: Sequence[str] specifying exact CSV column order.
+            rows: Iterable[dict] compatible with columns.
+
+        Returns:
+            None.
+
+        Raises:
+            OSError: If file creation or writing fails.
+            ValueError: If a row has unexpected keys.
+        """
         with (output_dir / filename).open('w', newline='', encoding='utf-8') as stream:
             writer = csv.DictWriter(stream, fieldnames=columns)
             writer.writeheader()
@@ -211,9 +307,25 @@ def detect_and_export(frames, source, args, model_info=None):
 
 
 def run_comparison(traditional_dir: Path, output_dir: Path, args, source: str):
-    """Run the existing matching/evaluation CLI, then correct its static GT-only prose.
+    """Run saved-CSV comparison and adapt its report prose for this workflow.
 
-    All metrics come from the repository's unchanged compare_apple_detectors.py.
+    Matching and metric calculation belong to compare_apple_detectors.py.
+    Report replacements depend on paragraph prefixes; they do not validate
+    historical RF-DETR branch settings. Retain the reference run's provenance.
+
+    Args:
+        traditional_dir: pathlib.Path containing counts and instances CSVs.
+        output_dir: pathlib.Path for comparison reports, CSVs, plots and examples.
+        args: argparse.Namespace with reference_dir, rgb_dir and max_distance.
+        source: str; predicted or gt, used for report interpretation.
+
+    Returns:
+        dict[str, str]: First summary_metrics.csv row; prints selected metrics.
+
+    Raises:
+        subprocess.CalledProcessError: If the comparison subprocess fails.
+        OSError: If report or summary cannot be accessed.
+        StopIteration: If the summary has no data row.
     """
     output_dir.mkdir(parents=True, exist_ok=True)
     command = [sys.executable, str(ROOT / 'src' / 'compare_apple_detectors.py'),
@@ -223,8 +335,8 @@ def run_comparison(traditional_dir: Path, output_dir: Path, args, source: str):
     print('\nComparing against fixed RF-DETR reference:\n', ' '.join(command), flush=True)
     subprocess.run(command, cwd=ROOT, check=True)
 
-    # The existing comparison generator has static claims about the ORIGINAL GT-only
-    # detector. Replace those paragraphs in this run's generated report only.
+    # The comparator describes standalone defaults rather than this driver's inputs.
+    # Adapt this report's prose; these prefix matches do not verify run provenance.
     report_path = output_dir / 'evaluation_report.md'
     if report_path.is_file():
         paragraphs = report_path.read_text(encoding='utf-8').split('\n\n')
@@ -232,13 +344,16 @@ def run_comparison(traditional_dir: Path, output_dir: Path, args, source: str):
         for p in paragraphs:
             if p.startswith('Both configured branch sources are GT, not predicted'):
                 if source == 'predicted':
-                    p = ('RF-DETR reference detections were generated previously using its configured GT branch masks. '
+                    p = ('RF-DETR reference detections are loaded from existing CSVs; their historical branch source '
+                         'and alignment require verification from run provenance. '
                          'In THIS experiment, the traditional detector uses branches predicted by the improved U-Net. '
-                         'These masks are placed in the central square using nearest-neighbour scaling, matching RF-DETR '
-                         'geometry (although branch-mask contents differ). Dilation=100 pixels and overlap >=0.05 remain fixed.')
+                         'These masks are placed in the central square using nearest-neighbour scaling, matching the '
+                         'standalone RF-DETR default geometry for square masks, rather than proving the saved reference geometry. '
+                         'Traditional dilation=100 pixels and overlap >=0.05 remain fixed.')
                 else:
-                    p = ('The traditional control run and RF-DETR reference use GT branch masks with central-square '
-                         'alignment. Traditional GT is binarised >127, matching RF-DETR. Branch dilation=100 pixels '
+                    p = ('The traditional control run uses GT branch masks with central-square alignment and >127 '
+                         'binarisation, matching standalone RF-DETR source defaults. The saved RF-DETR reference branch '
+                         'source and geometry require independent provenance checks. Traditional branch dilation=100 pixels '
                          'and overlap >=0.05 remain fixed.')
             elif p.startswith('Traditional configuration is recorded in outputs/apple_detection/run_metadata.json.'):
                 p = (f'This traditional experiment records its parameters, branch source and alignment in '
@@ -256,7 +371,10 @@ def run_comparison(traditional_dir: Path, output_dir: Path, args, source: str):
                      'tuning is performed by this script.')
             elif p.startswith('From repository root:\n```powershell'):
                 p = (f'From repository root:\n```powershell\nconda activate mma3001\n'
-                     f'python src/apple_predictor_predicted_compare.py\n```')
+                     f'python src/apple_predictor_predicted_compare.py --branch-source {source}\n```\n\n'
+                     'This is a source-selection template, not the complete original invocation. '
+                     'Restore the original paths, checkpoint, mask-reuse, threshold and frame-limit options '
+                     'from your run records; --also-gt-control can also affect the paired frame population.')
             updated.append(p)
         report_path.write_text('\n\n'.join(updated), encoding='utf-8')
 
@@ -272,7 +390,23 @@ def run_comparison(traditional_dir: Path, output_dir: Path, args, source: str):
 
 
 def build_frames(args):
-    """Discover RGB-D pairs; GT is optional unless the GT control is requested."""
+    """Discover season-filtered RGB-D pairs, optionally requiring paired GT.
+
+    Searches lowercase PNG extensions nonrecursively, skips invalid names and missing
+    depth with warnings. GT is required for gt source or also_gt_control, so
+    enabling the control can reduce the predicted experiment's frame set.
+
+    Args:
+        args: argparse.Namespace with rgb_dir, depth_dir, gt_dir, season,
+            branch_source, also_gt_control and optional positive max_images.
+
+    Returns:
+        list[tuple]: Sorted (RGB Path, parsed info dict, depth Path, GT Path),
+        limited to the first max_images if supplied.
+
+    Raises:
+        RuntimeError: If no eligible complete pairs remain.
+    """
     frames = []
     for path in sorted(args.rgb_dir.glob('*.png')):
         info = detector.parse_rgb_filename(path)
@@ -296,7 +430,26 @@ def build_frames(args):
 
 
 def main(argv=None):
-    """Infer branches, detect apples, write CSVs and run the existing comparator."""
+    """Parse options, produce predictions and optionally run comparisons.
+
+    Defaults to summer improved-U-Net branches and fixed existing RF-DETR CSVs.
+    --branch-source gt uses gt_output_dir/gt_comparison_dir, not predicted paths.
+    --reuse-masks skips model loading; --skip-comparison needs no reference CSVs.
+    A requested GT control uses the same discovered frame set and apple filters.
+
+    Args:
+        argv: Sequence[str] or None; CLI arguments, or sys.argv[1:] when None.
+
+    Returns:
+        None. Writes experiment outputs and prints progress/summary metrics.
+
+    Raises:
+        SystemExit: For help, invalid threshold/image limit, redundant control,
+            invalid CLI options or missing required reference CSVs.
+        RuntimeError: If no paired frames exist or model execution fails.
+        OSError: If required inputs/outputs cannot be accessed.
+        subprocess.CalledProcessError: If saved-CSV comparison fails.
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--season', default='Summer')
     parser.add_argument('--rgb-dir', type=Path, default=ROOT / 'data/Organised/Summer/RGB')

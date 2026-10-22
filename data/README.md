@@ -1,6 +1,6 @@
 # Data requirements
 
-Data is stored locally and excluded from Git. Run preparation from the repository root. These instructions describe input contracts; no data was modified or verified during the documentation update.
+Data is stored locally and excluded from Git. Run preparation from the repository root. These instructions describe input contracts; data was inventoried read-only, but was not modified or comprehensively validated during this documentation audit.
 
 ## Orchard PNGs
 
@@ -125,3 +125,13 @@ The resulting detections are saved as instance-level CSV data and segmentation o
 **Important:** RF-DETR predictions are treated as pseudo-ground truth, not independently verified apple annotations. Consequently, precision, recall, F1-score and counting errors calculated against these predictions measure agreement with RF-DETR rather than absolute apple-detection accuracy.
 
 The original dataset's licensing and redistribution conditions should be checked on Roboflow before sharing the downloaded images, annotations or derived datasets.
+
+## Predicted branch inputs
+
+The [predicted branch driver](../docs/source/predicted_branches.md) requires RGB-D
+pairs and an improved U-Net checkpoint for fresh predictions; GT is required only
+for the control or `--branch-source gt`. It exports square 0/255 masks as
+`outputs/branch_predictions/<RGB-stem>_branch.png`. Cache reuse bypasses checkpoint
+loading but needs independent provenance checks. `--season` does not change the
+Summer directory defaults: override all relevant modality paths explicitly.
+Local data presence does not imply inclusion in Git or redistribution rights.

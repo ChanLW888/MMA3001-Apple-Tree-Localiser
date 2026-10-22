@@ -16,23 +16,23 @@
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="dataset_organiser" href="dataset_organiser.html" />
     <link rel="prev" title="apple_segmenter_v1" href="apple_segmenter_v1.html" />
-   
-  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
-  
 
-  
-  
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+
+
+
+
 
   </head><body>
-  
+
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          
+
 
           <div class="body" role="main">
-            
+
   <section id="module-compare_apple_detectors">
 <span id="compare-apple-detectors"></span><h1>compare_apple_detectors<a class="headerlink" href="#module-compare_apple_detectors" title="Link to this heading">¶</a></h1>
 <p>Source: <code class="docutils literal notranslate"><span class="pre">src/compare_apple_detectors.py</span></code>.</p>
@@ -41,7 +41,7 @@
 <p>Matches exact basenames and original-image centroids from saved CSVs. One-to-one
 matching maximises valid pairs before minimising distance. Agreement is not
 independently verified accuracy. Runs no detector inference. Generated report prose
-includes fixed historical statements that this program does not verify.</p>
+distinguishes source defaults from unverified historical run settings.</p>
 <p class="rubric">Example</p>
 <p>python src/compare_apple_detectors.py –max-distance 30 –thresholds 10 20 30 40 50</p>
 <dl class="py function">
@@ -312,8 +312,8 @@ including zero-count frames.</p></li>
 <dd><p>Compare saved CSVs without rerunning either detector.</p>
 <p>Writes metrics, sensitivity, coverage, examples, SHA-256 manifest and annotation
 inventory. Defaults to apple_rfdetr_instances and apple_detection under outputs.
-Current source is not proof of historical CSV provenance. Embedded report prose is
-fixed program data, not verified experiment history.</p>
+Current source is not proof of historical CSV provenance. Report descriptions
+of defaults do not establish historical experiment configuration.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>None.</p>
@@ -332,7 +332,7 @@ fixed program data, not verified experiment history.</p>
 
 
           </div>
-          
+
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
@@ -358,13 +358,16 @@ fixed program data, not verified experiment history.</p>
 <script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
 <p class="caption" role="heading"><span class="caption-text">Project documentation</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../reviewer_start.html">Reviewer starting point and reproduction levels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../workflows.html">Apple workflows and environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../predicted_branches.html">Predicted branches versus GT branches</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../data_and_preprocessing.html">Data and preprocessing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../models.html">Model architectures</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../training_and_evaluation.html">Training and evaluation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Source API reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="apple_predictor_predicted_compare.html">apple_predictor_predicted_compare</a></li>
 <li class="toctree-l2"><a class="reference internal" href="apple_predictor_v1.html">apple_predictor_v1</a></li>
 <li class="toctree-l2"><a class="reference internal" href="apple_segmenter_train.html">apple_segmenter_train</a></li>
 <li class="toctree-l2"><a class="reference internal" href="apple_segmenter_v1.html">apple_segmenter_v1</a></li>
@@ -405,18 +408,18 @@ fixed program data, not verified experiment history.</p>
     </div>
     <div class="footer">
       &#169;2026, Chan Lik Wai.
-      
+
       |
       Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
       &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
-      
+
       |
       <a href="../_sources/api/compare_apple_detectors.rst.txt"
           rel="nofollow">Page source</a>
     </div>
 
-    
 
-    
+
+
   </body>
 </html>

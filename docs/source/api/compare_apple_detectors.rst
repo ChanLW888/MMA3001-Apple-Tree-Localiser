@@ -12,7 +12,7 @@ Compare traditional predictions with RF-DETR pseudo-ground truth.
 Matches exact basenames and original-image centroids from saved CSVs. One-to-one
 matching maximises valid pairs before minimising distance. Agreement is not
 independently verified accuracy. Runs no detector inference. Generated report prose
-includes fixed historical statements that this program does not verify.
+distinguishes source defaults from unverified historical run settings.
 
 .. rubric:: Example
 
@@ -185,8 +185,8 @@ python src/compare_apple_detectors.py --max-distance 30 --thresholds 10 20 30 40
 
    Writes metrics, sensitivity, coverage, examples, SHA-256 manifest and annotation
    inventory. Defaults to apple_rfdetr_instances and apple_detection under outputs.
-   Current source is not proof of historical CSV provenance. Embedded report prose is
-   fixed program data, not verified experiment history.
+   Current source is not proof of historical CSV provenance. Report descriptions
+   of defaults do not establish historical experiment configuration.
 
    :returns: None.
 

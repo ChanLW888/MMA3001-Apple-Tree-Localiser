@@ -15,24 +15,24 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Apple workflows and environments" href="workflows.html" />
-    <link rel="prev" title="Apple Tree Localiser - MMA3001" href="index.html" />
-   
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
-  
+    <link rel="prev" title="Reviewer starting point and reproduction levels" href="reviewer_start.html" />
 
-  
-  
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+
+
+
+
 
   </head><body>
-  
+
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          
+
 
           <div class="body" role="main">
-            
+
   <section id="overview">
 <h1>Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h1>
 <p>The branch component predicts binary trunk/scaffold-branch foreground from RGB and grayscale depth. Branch targets describe labelled tree structure rather than apple instances or the entire canopy.</p>
@@ -60,12 +60,12 @@
 </table>
 <p>Input tensors are float32 <code class="docutils literal notranslate"><span class="pre">[B,</span> <span class="pre">4,</span> <span class="pre">H,</span> <span class="pre">W]</span></code> in R/G/B/depth order. Targets and logits are <code class="docutils literal notranslate"><span class="pre">[B,</span> <span class="pre">1,</span> <span class="pre">H,</span> <span class="pre">W]</span></code>. Apply sigmoid and the inclusive probability cutoff for predictions; logits themselves are not binary masks. Geometry and scaling are described in <a class="reference internal" href="data_and_preprocessing.html"><span class="std std-doc">data and preprocessing</span></a>.</p>
 <p>Architecture differences suggest different representation/computation trade-offs, but no performance ranking or timing result is established by source inspection. Compare using the same data split, preprocessing and threshold. Validation is used for checkpoint selection, not independent testing.</p>
-<p>The separate apple workflows are documented in the repository root README. They default to ground-truth branch masks, not these models’ predictions. Thus branch training and apple localisation are separate workflows, not a fully connected deployment pipeline. RF-DETR comparison uses model-generated pseudo-ground truth rather than verified apple labels.</p>
+<p>Standalone apple scripts default to GT branches. The <a class="reference internal" href="predicted_branches.html"><span class="std std-doc">predicted branch driver</span></a> connects the improved U-Net to traditional detection and offers a GT-aligned control. This implemented connection has not established independent deployment accuracy. RF-DETR comparison uses model-generated pseudo-ground truth rather than verified apple labels.</p>
 </section>
 
 
           </div>
-          
+
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
@@ -91,8 +91,10 @@
 <script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
 <p class="caption" role="heading"><span class="caption-text">Project documentation</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="reviewer_start.html">Reviewer starting point and reproduction levels</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="workflows.html">Apple workflows and environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="predicted_branches.html">Predicted branches versus GT branches</a></li>
 <li class="toctree-l1"><a class="reference internal" href="data_and_preprocessing.html">Data and preprocessing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="models.html">Model architectures</a></li>
 <li class="toctree-l1"><a class="reference internal" href="training_and_evaluation.html">Training and evaluation</a></li>
@@ -104,7 +106,7 @@
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="index.html" title="previous chapter">Apple Tree Localiser - MMA3001</a></li>
+      <li>Previous: <a href="reviewer_start.html" title="previous chapter">Reviewer starting point and reproduction levels</a></li>
       <li>Next: <a href="workflows.html" title="next chapter">Apple workflows and environments</a></li>
   </ul></li>
 </ul>
@@ -123,18 +125,18 @@
     </div>
     <div class="footer">
       &#169;2026, Chan Lik Wai.
-      
+
       |
       Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
       &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
-      
+
       |
       <a href="_sources/overview.md.txt"
           rel="nofollow">Page source</a>
     </div>
 
-    
 
-    
+
+
   </body>
 </html>

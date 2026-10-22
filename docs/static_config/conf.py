@@ -15,10 +15,27 @@ api = ROOT / 'docs/source/api'
 api.mkdir(exist_ok=True)
 
 def prose(node):
+    """Format a parsed object docstring without importing its module.
+
+    Args:
+        node: ast.AST module, class or function supporting ast.get_docstring.
+
+    Returns:
+        str: Napoleon-formatted reStructuredText, or a missing-docstring label.
+    """
     doc = ast.get_docstring(node)
     return str(GoogleDocstring(doc)) if doc else 'No docstring is present in the source.'
 
 def members(nodes, prefix=''):
+    """Recursively emit static Python-domain directives, including nested helpers.
+
+    Args:
+        nodes: Iterable[ast.AST] statements from a parsed body.
+        prefix: str; enclosing qualified name and trailing dot, or empty.
+
+    Returns:
+        list[str]: RST lines with signatures and formatted documentation.
+    """
     lines = []
     for node in nodes:
         if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -73,3 +90,32 @@ paths on import. Static extraction avoids these side effects for every module.
 
 '''
 (api / 'index.rst').write_text(intro + ''.join('   ' + n + '\n' for n in names), encoding='utf-8')
+
+
+def trim_generated_html(app, exception):
+    """Remove template trailing whitespace after a successful HTML build.
+
+    Args:
+        app: Sphinx application; outdir identifies generated documentation only.
+        exception: Exception or None; failed builds are left available for diagnosis.
+
+    Returns:
+        None. Rewrites HTML text without altering elements, links or assets.
+
+    Raises:
+        OSError: If generated HTML cannot be read or rewritten.
+    """
+    if exception is None and app.builder.format == 'html':
+        for path in Path(app.outdir).rglob('*.html'):
+            text = path.read_text(encoding='utf-8')
+            path.write_text('\n'.join(line.rstrip() for line in text.splitlines()) + '\n',
+                            encoding='utf-8')
+
+
+def setup(app):
+    """Register output formatting without importing or running project modules.
+
+    Args:
+        app: Sphinx application receiving the build-finished event handler.
+    """
+    app.connect('build-finished', trim_generated_html)

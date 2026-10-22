@@ -47,6 +47,14 @@ oracle is used. Synthetic fixtures cannot establish performance on real orchards
 No full grid search, preparation, training or RF-DETR inference is executed.
 The default grid orchestration is tested only with mocked I/O, not real data.
 
+The new `apple_predictor_predicted_compare.py` driver has no dedicated test module
+in this suite. The final audit records separate temporary smoke checks for central
+projection, cached-mask encoding and report generation. Those checks do not verify
+trained branch predictions or replace real held-out annotations.
+
+Every test and fixture now describes its specific expected behaviour in a docstring;
+test names, assertions and computational logic are unchanged by the audit.
+
 To refresh the captured report with the same discovery command, run
 `conda run -n mma3001 python test/run_report.py`. It preserves actual combined
 stdout/stderr and the process exit code, and exits with that same status.
