@@ -7,8 +7,8 @@ This directory contains generated model checkpoints, predictions, annotations, e
 | Script | Output directory | Best checkpoint |
 |---|---|---|
 | `src/train_baseline.py` | `outputs/pixel_mlp_crop_trainval/` | `pixel_mlp_best.pth` |
-| `src/train_unet.py` | `outputs/resnet34_unet_crop_trainval_output/` | `resnet34_unet_best.pth` |
-| `src/train_improved_unet.py` | `outputs/improved_resnet34_unet_output/` | `improved_resnet34_unet_best.pth` |
+| `src/train_unet.py` | `outputs/resnet34_unet_crop_trainval/` | `resnet34_unet_best.pth` |
+| `src/train_improved_unet.py` | `outputs/improved_resnet34_unet/` | `improved_resnet34_unet_best.pth` |
 
 Each training directory contains:
 
@@ -154,4 +154,3 @@ The optimisation varies colour thresholds, component-area limits, circularity, a
 - Generated CSV files may be overwritten when scripts are rerun.
 - Model checkpoints, datasets and generated results are maintained locally unless explicitly committed.
 - RF-DETR comparison metrics measure agreement with pseudo-ground truth, not absolute apple-detection accuracy.
-- Historical output directories may differ from the current script defaults.
