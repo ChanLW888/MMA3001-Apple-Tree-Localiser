@@ -1,9 +1,9 @@
 MMA3001 synthetic unit-test execution
-UTC: 2026-10-22T18:04:32.424708+00:00
-Interpreter: C:\Users\Chan\anaconda3\envs\mma3001\python.exe
-Python: 3.13.15 | packaged by Anaconda, Inc. | (main, Aug 14 2026, 17:17:48) [MSC v.1942 64 bit (AMD64)]
-Platform: Windows-11-10.0.26200-SP0
-Environment: mma3001
+UTC: 2026-10-23T02:14:03.629716+00:00
+Interpreter: C:\Users\Chan\anaconda3\envs\rfdetr_test\python.exe
+Python: 3.11.17 | packaged by Anaconda, Inc. | (main, Oct  1 2026, 20:16:54) [MSC v.1942 64 bit (AMD64)]
+Platform: Windows-10-10.0.26200-SP0
+Environment: rfdetr_test
 Command: python -m unittest discover -s test -p "test_*.py" -v
 
 test_beyond_distance (test_apple_comparison.ComparisonTests.test_beyond_distance)
@@ -88,7 +88,7 @@ test_tree_partition_is_grouped_and_deterministic (test_grid_search.GridTests.tes
 Keep three frames per synthetic tree together and observe both hash partitions. ... ok
 
 ----------------------------------------------------------------------
-Ran 40 tests in 0.057s
+Ran 40 tests in 0.100s
 
 OK
 

@@ -16,7 +16,6 @@ conda run --no-capture-output -n mma3001 python -m sphinx -E -a -W --keep-going 
 
 Open `docs/_build/html/index.html` directly in a browser. The same site is provided for submission at [docs/html/index.html](html/index.html). Submit the whole `docs/html/` directory, including assets and linked pages. `.gitignore` excludes `docs/_build/`; it does not exclude `docs/html/`. No commit or push is performed automatically.
 
-Sphinx/MyST are pinned in the main requirements. `docs/requirements-docs.txt` remains a small documentation-only alternative; it uses the same pins and Python 3.13. Actual clean-environment build results are in [dependency verification](dependency_verification.md).
 
 ## Configuration and coverage
 

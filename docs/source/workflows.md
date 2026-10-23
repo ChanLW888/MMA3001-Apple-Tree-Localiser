@@ -4,7 +4,7 @@ The project combines RGB-D branch segmentation with separate 2D apple localisati
 
 ## Two pip environments
 
-Run commands from the repository root. Activate with `conda activate mma3001` or `conda activate rfdetr`. Use the root README installation steps to select CPU or CUDA wheels before installing the requirements. Python 3.13 is used for main workflows and Python 3.11 for RF-DETR. See [verification](../dependency_verification.md) for the tested scope.
+Run commands from the repository root. Activate with `conda activate mma3001` or `conda activate rfdetr`. Use the root README installation steps to select CPU or CUDA wheels before installing the requirements. Python 3.13 is used for main workflows and Python 3.11 for RF-DETR.
 
 | Environment | Requirements | Workflows |
 |---|---|---|

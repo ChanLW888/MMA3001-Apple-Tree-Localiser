@@ -58,7 +58,7 @@ conda create -n rfdetr python=3.11 pip -y
 conda activate rfdetr
 pip install torch torchvision
 pip install -r requirements-rfdetr.txt
-pip install "rfdetr[train,loggers]"`
+pip install "rfdetr[train,loggers]"
 python -m pip check
 ```
 
@@ -308,21 +308,6 @@ Future work should verify the implemented predicted-branch alignment/export stag
 
 Author: Chan Lik Wai. Prepared for the MMA3001 Numerical Methods and Machine Learning project. The implementation uses the TreeID orchard data supplied for the project and an apple COCO export whose precise provenance/licence should be recorded before redistribution. It uses NumPy, OpenCV, Pillow, SciPy, Matplotlib, PyTorch/torchvision and RF-DETR; documentation uses Sphinx/MyST. ResNet-34, U-Net, ASPP and attention/residual blocks describe the implemented architecture. Verified primary background references for these method families are listed in the [model guide](docs/source/models.md). They do not establish the provenance of a previously unnamed source paper; the student must still acknowledge the materials actually used.
 
-
-## Portability and submission evidence
-
-The root requirements files replace platform-specific Conda exports. Direct pins
-preserve the working package versions, while explicit Torch index selection avoids
-unresolvable CUDA local-version pins. The [dependency audit](docs/dependency_verification.md)
-records the tested platform, resolved packages and verification scope. These are
-minimal direct specifications rather than hash-locked transitive environments.
-
-Local data, historical checkpoints and results exist in this working copy but are
-ignored by Git. Clone/ZIP recipients need separately permitted data/weight access
-and checksums. The [final audit](docs/final_audit.md) records availability, checks,
-known issues and the official rubric assessment. The 2026 brief was found in the
-parent MMA3001 course directory; its requirements and all six rubric rows are
-assessed in the audit, alongside the additional review requirements supplied here.
 
 ## AI assistance and student reflection
 
