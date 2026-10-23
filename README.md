@@ -58,6 +58,7 @@ conda create -n rfdetr python=3.11 pip -y
 conda activate rfdetr
 pip install torch torchvision
 pip install -r requirements-rfdetr.txt
+pip install "rfdetr[train,loggers]"`
 python -m pip check
 ```
 
