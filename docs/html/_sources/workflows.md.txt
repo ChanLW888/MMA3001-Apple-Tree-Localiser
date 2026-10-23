@@ -2,16 +2,16 @@
 
 The project combines RGB-D branch segmentation with separate 2D apple localisation experiments. Standalone detectors default to branch GT. The [predicted branch driver](predicted_branches.md) runs the improved U-Net before traditional detection, with an optional aligned-GT control. RF-DETR predictions used for comparison are pseudo-ground truth, not verified apple annotations.
 
-## Two Conda environments
+## Two pip environments
 
-Run commands from the repository root. Activate with `conda activate mma3001` or `conda activate rfdetr`. Environment creation is separate from documentation building; existing exports are unchanged.
+Run commands from the repository root. Activate with `conda activate mma3001` or `conda activate rfdetr`. Use the root README installation steps to select CPU or CUDA wheels before installing the requirements. Python 3.13 is used for main workflows and Python 3.11 for RF-DETR.
 
-| Environment | Export | Workflows |
+| Environment | Requirements | Workflows |
 |---|---|---|
-| `mma3001` | `environment.yml` | Branch training, traditional detection, comparison, optimisation, dataset utilities; documentation with existing Sphinx/MyST |
-| `rfdetr` | `rfdetr_environment.yml` | RF-DETR segmentation training and inference |
+| `mma3001` | `requirements.txt` | Branch training, traditional detection, comparison, optimisation, dataset utilities; documentation with existing Sphinx/MyST |
+| `rfdetr` | `requirements-rfdetr.txt` | RF-DETR segmentation training and inference |
 
-The two detector stacks need not coexist in one environment. Datasets and checkpoints are supplied separately. Exported packages do not establish clean-machine, operating-system or CUDA compatibility.
+The two detector stacks need not coexist in one environment. Datasets and checkpoints are supplied separately. Clean Windows installation and hardware verification evidence is recorded separately; other operating systems are untested.
 
 ## API navigation
 

@@ -36,28 +36,28 @@
   <section id="apple-workflows-and-environments">
 <h1>Apple workflows and environments<a class="headerlink" href="#apple-workflows-and-environments" title="Link to this heading">¶</a></h1>
 <p>The project combines RGB-D branch segmentation with separate 2D apple localisation experiments. Standalone detectors default to branch GT. The <a class="reference internal" href="predicted_branches.html"><span class="std std-doc">predicted branch driver</span></a> runs the improved U-Net before traditional detection, with an optional aligned-GT control. RF-DETR predictions used for comparison are pseudo-ground truth, not verified apple annotations.</p>
-<section id="two-conda-environments">
-<h2>Two Conda environments<a class="headerlink" href="#two-conda-environments" title="Link to this heading">¶</a></h2>
-<p>Run commands from the repository root. Activate with <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">activate</span> <span class="pre">mma3001</span></code> or <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">activate</span> <span class="pre">rfdetr</span></code>. Environment creation is separate from documentation building; existing exports are unchanged.</p>
+<section id="two-pip-environments">
+<h2>Two pip environments<a class="headerlink" href="#two-pip-environments" title="Link to this heading">¶</a></h2>
+<p>Run commands from the repository root. Activate with <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">activate</span> <span class="pre">mma3001</span></code> or <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">activate</span> <span class="pre">rfdetr</span></code>. Use the root README installation steps to select CPU or CUDA wheels before installing the requirements. Python 3.13 is used for main workflows and Python 3.11 for RF-DETR.</p>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>Environment</p></th>
-<th class="head"><p>Export</p></th>
+<th class="head"><p>Requirements</p></th>
 <th class="head"><p>Workflows</p></th>
 </tr>
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mma3001</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">environment.yml</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">requirements.txt</span></code></p></td>
 <td><p>Branch training, traditional detection, comparison, optimisation, dataset utilities; documentation with existing Sphinx/MyST</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">rfdetr</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">rfdetr_environment.yml</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">requirements-rfdetr.txt</span></code></p></td>
 <td><p>RF-DETR segmentation training and inference</p></td>
 </tr>
 </tbody>
 </table>
-<p>The two detector stacks need not coexist in one environment. Datasets and checkpoints are supplied separately. Exported packages do not establish clean-machine, operating-system or CUDA compatibility.</p>
+<p>The two detector stacks need not coexist in one environment. Datasets and checkpoints are supplied separately. Clean Windows installation and hardware verification evidence is recorded separately; other operating systems are untested.</p>
 </section>
 <section id="api-navigation">
 <h2>API navigation<a class="headerlink" href="#api-navigation" title="Link to this heading">¶</a></h2>
@@ -108,7 +108,7 @@
 <li class="toctree-l1"><a class="reference internal" href="reviewer_start.html">Reviewer starting point and reproduction levels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Apple workflows and environments</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#two-conda-environments">Two Conda environments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#two-pip-environments">Two pip environments</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#api-navigation">API navigation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#licence-boundary">Licence boundary</a></li>
 </ul>
