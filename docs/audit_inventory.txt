@@ -11,7 +11,6 @@ docs/audit_inventory.txt
 docs/checkpoint_smoke_report.json
 docs/definition_review.tsv
 docs/distribution_smoke_report.json
-docs/final_audit.md
 docs/html/.buildinfo
 docs/html/_sources/api/apple_predictor_predicted_compare.rst.txt
 docs/html/_sources/api/apple_predictor_v1.rst.txt
@@ -77,7 +76,6 @@ docs/html/searchindex.js
 docs/html/training_and_evaluation.html
 docs/html/usage.html
 docs/html/workflows.html
-docs/html_verification.md
 docs/requirements-docs.txt
 docs/source/api/apple_predictor_predicted_compare.rst
 docs/source/api/apple_predictor_v1.rst

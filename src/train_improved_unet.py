@@ -677,7 +677,7 @@ def main():
     print("Model: improved ResNet-34 U-Net (ASPP + attention skips + residual decoder)")
     print("Input: 4 channels (RGB + one greyscale depth channel)")
     print("Loss: plain BCEWithLogitsLoss")
-    print("Optimiser: Adam")
+    print("Optimiser: AdamW")
     print(f"Batch size: {args.batch_size}")
     samples = build_samples(args.data_root)
     random.Random(args.seed).shuffle(samples)
