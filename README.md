@@ -13,9 +13,6 @@ The engineering objective is reproducible image-space apple candidates and branc
 
 ## Repository map
 
-For a short assessment route, use the [reviewer starting point](docs/source/reviewer_start.md).
-It separates checks requiring no orchard files from full experiment reproduction.
-
 | Location | Maintained content |
 |---|---|
 | [requirements.txt](requirements.txt) | Direct main workflow and documentation dependencies |
