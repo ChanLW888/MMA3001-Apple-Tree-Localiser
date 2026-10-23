@@ -31,4 +31,4 @@ Apple comparison is a separate workflow on saved CSVs. Its RF-DETR reference is 
 
 ## Testing boundaries
 
-The current 40-test synthetic suite checks detection, exports, matching, metrics, CSV validation and grid helpers, including mocked main orchestration. It contains no all-frame regression or historical-output fixtures. Its changed-objective test reproduces stale held-out reuse; passing does not establish a fix. The predicted driver has no dedicated test module. See the repository test README and final audit for execution and smoke-check boundaries.
+The current 40-test synthetic suite checks detection, exports, matching, metrics, CSV validation and grid helpers, including mocked main orchestration. It contains no all-frame regression or historical-output fixtures. Its changed-objective test reproduces stale held-out reuse; passing does not establish a fix. The predicted driver has no dedicated test module.

@@ -101,9 +101,7 @@ docs/source/usage.md
 docs/source/workflows.md
 docs/static_config/conf.py
 docs/verify_documentation.py
-environment.yml
 outputs/README.md
-rfdetr_environment.yml
 src/README.md
 src/apple_predictor_predicted_compare.py
 src/apple_predictor_v1.py

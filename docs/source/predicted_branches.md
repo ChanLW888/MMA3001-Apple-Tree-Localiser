@@ -117,8 +117,7 @@ rejected; all-zero masks are accepted. Other grayscale values are merely thresho
 **Cache provenance limitation:** reuse does not verify mask fingerprints, checkpoint,
 input size or threshold. Metadata records the requested checkpoint/threshold even
 when cached masks came from another configuration. Use a fresh mask directory per
-checkpoint/threshold and retain independent provenance. A separate executable fix
-should validate reuse; this audit changes documentation only.
+checkpoint/threshold and retain independent provenance.
 
 The wrapper adjusts comparator report paragraphs by exact text prefixes. This is
 fragile; updated prose distinguishes standalone defaults from unverified reference
