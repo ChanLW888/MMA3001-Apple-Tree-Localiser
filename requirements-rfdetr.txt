@@ -1,0 +1,23 @@
+# MMA3001 RF-DETR environment (Python 3.11 recommended, based on supplied YAML).
+# Direct RF-DETR, Roboflow, inference and visualisation requirements.
+# Install the platform-appropriate PyTorch build first (see instructions below).
+# Do NOT restore the unavailable torch==2.14.0+cu130 export pin.
+
+rfdetr==1.9.4
+roboflow==1.4.2
+supervision==0.30.1
+numpy==2.3.5
+scipy==1.17.1
+pillow==12.3.0
+opencv-python-headless==5.0.0.93
+matplotlib==3.11.1
+pycocotools==2.0.11
+
+torch==2.13.0
+torchvision==0.28.0
+
+# Retained explicitly from the RF-DETR environment's ML dependency stack.
+# rfdetr dependencies may also install these transitively.
+transformers==5.16.1
+accelerate==1.14.0
+peft==0.20.0

@@ -1,6 +1,6 @@
 # Synthetic software verification
 
-Run from the repository root with the existing environment:
+Run from the repository root after installing [requirements.txt](../requirements.txt) using the [root setup instructions](../README.md#environment-and-hardware):
 
 ```powershell
 conda activate mma3001

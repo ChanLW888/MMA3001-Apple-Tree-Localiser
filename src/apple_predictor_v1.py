@@ -30,15 +30,15 @@ COUNTS_CSV = OUTPUT_ROOT / 'apple_counts.csv'
 INSTANCES_CSV = OUTPUT_ROOT / 'apple_instances.csv'
 TIMINGS_CSV = OUTPUT_ROOT / 'image_timings.csv'
 
-RED_THRESHOLD = 50
-RED_DOMINANCE = 1.5
-MIN_APPLE_AREA = 30
-MAX_APPLE_AREA = 5000
-MIN_CIRCULARITY = 0.20
-MAX_ASPECT_RATIO = 2.5
+RED_THRESHOLD = 60
+RED_DOMINANCE = 1.35
+MIN_APPLE_AREA = 20
+MAX_APPLE_AREA = 2000
+MIN_CIRCULARITY = 0.10
+MAX_ASPECT_RATIO = 3.5
 BRANCH_DILATION = 100
 MIN_BRANCH_OVERLAP = 0.05
-MORPH_KERNEL_SIZE = 5
+MORPH_KERNEL_SIZE = 3
 # Preserve original script's GT-to-image alignment (full-frame resize).
 # Confirm this agrees with your dataset before interpreting localisation metrics.
 

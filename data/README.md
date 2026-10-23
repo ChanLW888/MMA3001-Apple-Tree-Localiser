@@ -1,10 +1,10 @@
 # Data requirements
 
-Data is stored locally and excluded from Git. Run preparation from the repository root. These instructions describe input contracts; data was inventoried read-only, but was not modified or comprehensively validated during this documentation audit.
+Data was stored locally and excluded from Git. Run dataset preparation from the repository root. These instructions describe input contracts. The data used was the dataset A (apple tree dataset) for the provided MMA3001 datasets.
 
 ## Orchard PNGs
 
-`src/dataset_organiser.py` reads the flat `data/Dataset (With Summer GT)` folder. A separate historical `data/Dataset` folder may exist but is not read by that script.
+`src/dataset_organiser.py` reads the flat `data/Dataset (With Summer GT)` folder.
 
 ```text
 data/

@@ -7,7 +7,7 @@ Sphinx with MyST and Napoleon formats the existing project guides and statically
 
 ## Build and view
 
-Run from the repository root with the existing `mma3001` environment, which already contains Sphinx/MyST:
+Run from the repository root with `mma3001` after installing [requirements.txt](../requirements.txt) as described in the [root setup guide](../README.md#environment-and-hardware):
 
 ```powershell
 conda run --no-capture-output -n mma3001 python -m sphinx -E -a -W --keep-going -c docs/static_config -b html docs/source docs/_build/html
@@ -16,7 +16,7 @@ conda run --no-capture-output -n mma3001 python -m sphinx -E -a -W --keep-going 
 
 Open `docs/_build/html/index.html` directly in a browser. The same site is provided for submission at [docs/html/index.html](html/index.html). Submit the whole `docs/html/` directory, including assets and linked pages. `.gitignore` excludes `docs/_build/`; it does not exclude `docs/html/`. No commit or push is performed automatically.
 
-The existing requirements are listed in `docs/requirements-docs.txt`; no packages were installed or upgraded for this task. If dependencies are unavailable, the commands report the missing package; neither application environment YAML needs editing.
+Sphinx/MyST are pinned in the main requirements. `docs/requirements-docs.txt` remains a small documentation-only alternative; it uses the same pins and Python 3.13. Actual clean-environment build results are in [dependency verification](dependency_verification.md).
 
 ## Configuration and coverage
 

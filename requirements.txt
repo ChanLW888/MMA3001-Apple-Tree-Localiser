@@ -1,0 +1,18 @@
+# MMA3001 primary environment (Python 3.13 recommended, based on the supplied YAML).
+# Direct project dependencies; pip resolves indirect dependencies.
+# Install the platform-appropriate PyTorch build first (see instructions below).
+# Torch versions are pinned without CUDA suffixes to work with an already-installed
+# official CPU or CUDA wheel; installing this file alone does not choose the CUDA index.
+
+numpy==2.5.2
+scipy==1.18.1
+matplotlib==3.11.1
+pillow==12.3.0
+opencv-python==5.0.0.93
+
+torch==2.13.0
+torchvision==0.28.0
+
+# HTML documentation (Sphinx, MyST Markdown support)
+sphinx==9.1.0
+myst-parser==5.1.0

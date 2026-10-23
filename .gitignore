@@ -13,3 +13,6 @@ __pycache__/
 .venv/
 venv/
 outputs/
+
+# Local dependency verification and optional venv environments
+.venv-*/
