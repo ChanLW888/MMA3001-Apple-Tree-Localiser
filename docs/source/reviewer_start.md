@@ -73,7 +73,7 @@ the requirement for real inputs and saved reference CSVs.
 
 ## Evidence for assessment and final demonstration
 
-The root README links the final audit, actual software-test report, definition
+The root README links the actual software-test report, definition
 ledger, checkpoint smoke report and AI disclosure. The audit maps every official
 rubric row to evidence and remaining gaps. Documentation coverage and successful
 synthetic checks cannot supply missing independent validation or student reflection.

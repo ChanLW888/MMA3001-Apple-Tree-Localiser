@@ -307,12 +307,3 @@ Future work should verify the implemented predicted-branch alignment/export stag
 ## References and acknowledgements
 
 Author: Chan Lik Wai. Prepared for the MMA3001 Numerical Methods and Machine Learning project. The implementation uses the TreeID orchard data supplied for the project and an apple COCO export whose precise provenance/licence should be recorded before redistribution. It uses NumPy, OpenCV, Pillow, SciPy, Matplotlib, PyTorch/torchvision and RF-DETR; documentation uses Sphinx/MyST. ResNet-34, U-Net, ASPP and attention/residual blocks describe the implemented architecture. Verified primary background references for these method families are listed in the [model guide](docs/source/models.md). They do not establish the provenance of a previously unnamed source paper; the student must still acknowledge the materials actually used.
-
-
-## AI assistance and student reflection
-
-Codex assisted with this final source/documentation review, documentation edits,
-report prose and verification commands. [AI disclosure](docs/ai_disclosure.md)
-separates observable assistance from the student's outstanding account of earlier
-ChatGPT/Codex use, approximate contribution, decisions, verification and reflection.
-No personal contribution percentages or human verification are inferred here.

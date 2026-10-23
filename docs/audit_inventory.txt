@@ -6,7 +6,6 @@ LICENSE
 README.md
 data/README.md
 docs/README.md
-docs/ai_disclosure.md
 docs/audit_inventory.txt
 docs/checkpoint_smoke_report.json
 docs/definition_review.tsv

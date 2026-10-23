@@ -211,8 +211,3 @@ Boxes are inclusive xyxy in original RGB pixels, x right and y down; exported
 branch-network masks themselves remain square input-grid PNGs.
 Reruns overwrite CSVs/metadata and matching PNGs, leaving old unmatched PNGs.
 Keep each custom experiment/reference directory distinct.
-
-Reports in ignored output folders are historical artefacts preserved by this audit.
-Some contain obsolete commands/parameter prose. Their numerical results were not
-recomputed; use the current generator and maintained commands for new reports.
-Source-default settings do not prove historical run provenance.

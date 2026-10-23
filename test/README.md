@@ -48,7 +48,7 @@ No full grid search, preparation, training or RF-DETR inference is executed.
 The default grid orchestration is tested only with mocked I/O, not real data.
 
 The new `apple_predictor_predicted_compare.py` driver has no dedicated test module
-in this suite. The final audit records separate temporary smoke checks for central
+in this suite. 
 projection, cached-mask encoding and report generation. Those checks do not verify
 trained branch predictions or replace real held-out annotations.
 
